@@ -6,9 +6,13 @@ class PatrolClient {
     constructor() {
         this.currentPed = null;
 
-        this.viewDistance = 3;     // длина конуса
-        this.viewAngle = 40;         // угол обзора (градусы)
-        this.viewSectors = 2;
+        this.viewDistance = 4;     // длина конуса
+        this.viewAngle = 80;         // угол обзора (градусы)
+        this.viewSectors = 6;
+
+        this.isPlayerInSight = false;
+        
+
         this.init();
     }
 
@@ -43,56 +47,125 @@ class PatrolClient {
         
     }
 
-    drawPedVisionCone(ped){
+drawPedVisionCone(ped) {
     const pos = ped.pos;
-    const heading = native.getEntityHeading(ped.scriptID); // градусы
+    const heading = native.getEntityHeading(ped.scriptID);
+    const player = alt.Player.local; 
+    let currentColor;
     
-    // Конвертируем в радианы
-    const headingRad = heading * (Math.PI / 180);
-    const halfAngleRad = (this.viewAngle / 2) * (Math.PI / 180);
-    const stepAngleRad = (this.viewAngle * (Math.PI / 180)) / this.viewSectors;
+    if (this.isPlayerInSight) {
+        currentColor = [255, 0, 0, 200];
+    } 
+    else {
+        currentColor = [0, 255, 0, 200];
+    }
+
+    const headingRad = heading * Math.PI / 180;
+    const halfAngleRad = (this.viewAngle / 2) * Math.PI / 180;
+    const stepAngleRad = (this.viewAngle * Math.PI / 180) / this.viewSectors;
 
     let lastPoint = null;
 
+    // Отрисовка конуса видимости (без изменений)
     for (let i = -halfAngleRad; i <= halfAngleRad; i += stepAngleRad) {
-        // Текущий угол луча конуса
         const currentAngle = headingRad + i;
-        
-        // Правильные формулы для GTA координат
+
         const forwardX = Math.sin(-currentAngle);
         const forwardY = Math.cos(-currentAngle);
-        
+
         const x = pos.x + forwardX * this.viewDistance;
         const y = pos.y + forwardY * this.viewDistance;
         const z = pos.z;
 
-        // линия от ped
         native.drawLine(
             pos.x, pos.y, pos.z + 0.1,
             x, y, z + 0.1,
-            255, 255, 0, 180
+            currentColor[0], currentColor[1], currentColor[2], currentColor[3]
         );
-        
-        // соединяем крайние точки
+
         if (lastPoint) {
             native.drawLine(
                 lastPoint.x, lastPoint.y, lastPoint.z + 0.1,
                 x, y, z + 0.1,
-                255, 255, 0, 100
+                currentColor[0], currentColor[1], currentColor[2], currentColor[3]
             );
         }
 
         lastPoint = { x, y, z };
-        }
-
-        native.drawLine(
-        pos.x, pos.y, pos.z + 0.2,
-        pos.x + Math.sin(-headingRad) * 3,
-        pos.y + Math.cos(-headingRad) * 3,
-        pos.z + 0.2,
-        255, 0, 0, 255 // красная линия направления
-        );
     }
+
+    // Проверяем только локального игрока вместо всех игроков
+    if (player && player.valid) {
+        if (this.isPlayerInVisionCone(ped, player, headingRad, halfAngleRad)) {
+            // Отображаем маркер над игроком
+            native.drawMarker(
+                0,
+                player.pos.x, player.pos.y, player.pos.z + 1.0,
+                0, 0, 0,
+                0, 0, 0,
+                0.15, 0.15, 0.15,
+                255, 0, 0, 200,
+                false, true, 2, 0, 0, 0, false
+            );
+
+            if (!this.isPlayerInSight) {
+                this.isPlayerInSight = true;
+                alt.log('this.isPlayerInSight = true;');
+            }
+        }
+        else {
+            if (this.isPlayerInSight) {
+                this.isPlayerInSight = false;
+                alt.log('this.isPlayerInSight = false;');
+            }
+        }
+    }
+
+    // Центральная линия направления взгляда
+    if (this.isPlayerInSight) {
+    native.drawLine(
+        pos.x, pos.y, pos.z + 0.2,
+        player.pos.x, player.pos.y, player.pos.z + 0.5,
+        //pos.x + Math.sin(-headingRad) * this.viewDistance,
+        //pos.y + Math.cos(-headingRad) * this.viewDistance,
+        //pos.z + 0.2,
+        currentColor[0], currentColor[1], currentColor[2], currentColor[3]
+    );
+    }
+}
+
+isPlayerInVisionCone(ped, player, headingRad, halfAngleRad) {
+    const pedPos = ped.pos;
+    const playerPos = player.pos;
+
+    // Вектор от ped к игроку
+    const toPlayerX = playerPos.x - pedPos.x;
+    const toPlayerY = playerPos.y - pedPos.y;
+
+    // Дистанция
+    const distance = Math.sqrt(toPlayerX * toPlayerX + toPlayerY * toPlayerY);
+    if (distance > this.viewDistance) return false;
+
+    // Нормализованный вектор "вперёд" (ТОЧНО как в drawPedVisionCone)
+    const forwardX = Math.sin(-headingRad);
+    const forwardY = Math.cos(-headingRad);
+
+    // Нормализованный вектор на игрока
+    const len = Math.sqrt(toPlayerX * toPlayerX + toPlayerY * toPlayerY);
+    const dirToPlayerX = toPlayerX / len;
+    const dirToPlayerY = toPlayerY / len;
+
+    // Скалярное произведение
+    const dot = forwardX * dirToPlayerX + forwardY * dirToPlayerY;
+
+    // Угол между forward и игроком
+    const angleToPlayer = Math.acos(dot);
+
+    return angleToPlayer <= halfAngleRad;
+}
+
+
+
 
     drawTestLine(ped){
         const pos = ped.pos;

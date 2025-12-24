@@ -49,7 +49,6 @@ class PatrolServer {
         this.currentPed = npc;
         alt.log(`npc:setup: {
     id: ${this.currentPed.id},
-    scriptID: ${this.currentPed.scriptID},
     model: ${this.currentPed.model},
     dimension: ${this.currentPed.dimension},
     invincible: ${this.currentPed.invincible},
