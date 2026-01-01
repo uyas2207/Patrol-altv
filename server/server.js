@@ -4,10 +4,15 @@ import * as alt from 'alt-server';
 import * as chat from 'alt:chat';
 
 
-
 class PatrolServer {
     constructor() {
         this.currentPed = null;
+        this.patrolPoints = [
+            new alt.Vector3(-1266.87, -1443.204, 4.460), // Точка A
+            new alt.Vector3(-1269.91, -1438.64, 4.44)    // Точка B
+        ];
+        this.currentPatrolIndex = 0;
+        this.isPatrolling = false;
         this.init();
     }
 
@@ -19,9 +24,16 @@ class PatrolServer {
             //alt.emitAllClients("npc:setup", this.currentPed.id);
             //alt.log(`npc:setup: ${JSON.stringify(this.currentPed, null, '\t')}`);
             //alt.log(`this.currentPed ${this.currentPed}`);
+            //this.currentPed.setStreamSyncedMeta("giveWanderTask", true);
         });
 
-        alt.on('resourceStart', this.spawnDefaultNpcs);
+        alt.on('resourceStart', () => {
+            this.spawnDefaultNpcs();
+            // Запускаем патрулирование через 2 секунды после спавна
+            alt.setTimeout(() => {
+               // this.startPatrolling();
+            }, 2000);
+        });
 
     }
 
@@ -42,23 +54,27 @@ class PatrolServer {
         
         // Делаем NPC инвульнеральным (неуязвимым)
         npc.invincible = true;
-        npc.collision = false;      
+        //npc.collision = false;      
         //native.setBlockingOfNonTemporaryEvents(npc.scriptID, true);
         // Заморозваем NPC на месте, чтобы он не двигался
-        npc.frozen = true;
+        //npc.frozen = true;
         this.currentPed = npc;
+        
         alt.log(`npc:setup: {
-    id: ${this.currentPed.id},
-    model: ${this.currentPed.model},
-    dimension: ${this.currentPed.dimension},
-    invincible: ${this.currentPed.invincible},
-    frozen: ${this.currentPed.frozen},
-    collision: ${this.currentPed.collision},
-    pos: ${JSON.stringify(this.currentPed.pos)}
-}`);
+            id: ${this.currentPed.id},
+            model: ${this.currentPed.model},
+            dimension: ${this.currentPed.dimension},
+            scriptID: ${this.currentPed.scriptID},
+            invincible: ${this.currentPed.invincible},
+            frozen: ${this.currentPed.frozen},
+            collision: ${this.currentPed.collision},
+            pos: ${JSON.stringify(this.currentPed.pos)}
+        }`);
+        
         //alt.log(Object.getOwnPropertyNames(this.currentPed));
+
     }
-    
+
     
 }
 

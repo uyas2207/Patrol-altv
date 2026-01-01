@@ -31,7 +31,7 @@ class PatrolClient {
         for (let key in entity) {
             try {
                 alt.log(`${key} = ${entity[key]}`);
-            } catch (e) {
+            } catch (error) {
                 // нужно что бы код продолжил выполняться после ошибки если она будет
             }
         }
@@ -41,10 +41,15 @@ class PatrolClient {
         
         alt.everyTick(() => {
             if (!this.currentPed || !this.currentPed.valid) return;
-            //this.drawTestLine(this.currentPed);
             this.drawPedVisionCone(this.currentPed);
         });
         
+
+            alt.onServer('patrol:startPedPatrol', () => {
+                //alt.log(`Пришло с сервера patrol:startPedPatrol`);
+                //this.createPatrolRouteFixed(this.currentPed);
+            });
+
     }
 
 drawPedVisionCone(ped) {
@@ -66,7 +71,7 @@ drawPedVisionCone(ped) {
 
     let lastPoint = null;
 
-    // Отрисовка конуса видимости (без изменений)
+    // Отрисовка конуса видимости
     for (let i = -halfAngleRad; i <= halfAngleRad; i += stepAngleRad) {
         const currentAngle = headingRad + i;
 
@@ -94,7 +99,7 @@ drawPedVisionCone(ped) {
         lastPoint = { x, y, z };
     }
 
-    // Проверяем только локального игрока вместо всех игроков
+    // проверяет только игрока
     if (player && player.valid) {
         if (this.isPlayerInVisionCone(ped, player, headingRad, halfAngleRad)) {
             // Отображаем маркер над игроком
@@ -121,7 +126,7 @@ drawPedVisionCone(ped) {
         }
     }
 
-    // Центральная линия направления взгляда
+    // центральная линия направления взгляда (точка столкновения)
     if (this.isPlayerInSight) {
     native.drawLine(
         pos.x, pos.y, pos.z + 0.2,
@@ -165,89 +170,95 @@ isPlayerInVisionCone(ped, player, headingRad, halfAngleRad) {
 }
 
 
-
-
-    drawTestLine(ped){
-        const pos = ped.pos;
-        const heading = native.getEntityHeading(ped.scriptID);
-    
-        const headingRad = heading * (Math.PI / 180);
-    
-        // Рассчитываем конечную точку на основе направления
-        const distance = 2; // Длина линии
-        const endX = pos.x + Math.sin(-headingRad) * distance;
-        const endY = pos.y + Math.cos(-headingRad) * distance;
-        const endZ = pos.z;
-
-        native.drawLine(
-            pos.x, pos.y, pos.z,
-            endX, endY, endZ,
-            255, 255, 0, 180 // жёлтый
-        );
-    }
-
-
-    // РИСОВАНИЕ КОНУСА ОБЗОРА
-    testDrawPedVisionCone(ped) {
-
-        const pos = ped.pos;
-        alt.log(`ped.pos: ${ped.pos}`);
-        const headingRad= native.getEntityHeading(ped.scriptID); // градусы
-        alt.log(`heading: ${heading}`);
-        const halfAngle = this.viewAngle / 2;
-        alt.log(`halfAngle: ${halfAngle}`);
-        const steps = 12; // чем больше — тем плавнее конус
-
-        let lastPoint = null;
-
-        for (let i = -halfAngle; i <= halfAngle; i += this.viewAngle / steps) {
-            alt.log(`шаг i =: ${i}`);
-            const angle = (headingRad+ i) * (Math.PI / 180);
-            alt.log(`angle: ${angle}`);
-            let cos = Math.cos(angle);
-            alt.log(`cos: ${cos}`);
-            let sin = Math.sin(angle);
-            alt.log(`sin: ${sin}`);
-            alt.log(`x = pos.x + Math.cos(angle) * this.viewDistance =  ${pos.x} + ${cos} * ${this.viewDistance}`);
-            const x = pos.x + Math.cos(angle) * this.viewDistance;
-            //alt.log(`x: ${x}`);
-            alt.log(`y = pos.y + Math.sin(angle) * this.viewDistance = ${pos.y} + ${sin} * ${this.viewDistance}`)
-            const y = pos.y + Math.sin(angle) * this.viewDistance;
-            //alt.log(`y: ${y}`);
-            const z = pos.z;
-            //alt.log(`z: ${z}`);
-            // линия от ped
-            native.drawLine(
-                pos.x, pos.y, pos.z + 0.1,
-                x, y, z + 0.1,
-                255, 255, 0, 180 // жёлтый
-            );
-            alt.log(`pos.x: ${pos.x}  pos.y: ${pos.y}  pos.z: ${z}  x: ${x}  y: ${y}  z: ${z}`);
-            // соединяем крайние точки (заливка)
-            if (lastPoint) {
-                alt.log(`lastPoint.x: ${lastPoint.x}  lastPoint.y: ${lastPoint.y}  lastPoint.z: ${lastPoint.z}`);
-                native.drawLine(
-                    lastPoint.x, lastPoint.y, lastPoint.z + 0.1,
-                    x, y, z + 0.1,
-                    255, 255, 0, 100
-                );
-            }
-
-            lastPoint = { x, y, z };
-            //alt.log(`lastPoint: ${lastPoint}`);
-        }
-    }
-
         async setPedClient(ped){
             alt.log(`setPedClient ${ped}`);
             await new Promise(resolve => alt.setTimeout(resolve, 500));
             //const ped = alt.Ped.getByID(npcID);
             //alt.log(`PatrolClient: ${ped}`);
             alt.log(`После таймера ${ped}`);
-            native.setEntityInvincible(ped, true);
-            native.setBlockingOfNonTemporaryEvents(ped, true);
+            //native.setEntityInvincible(ped, true);
+            //native.setBlockingOfNonTemporaryEvents(ped, true);
             //this.testDrawPedVisionCone(this.currentPed);
+            //this.createAndVerifyPatrol(this.currentPed);
+            this.verifyRouteCreation(this.currentPed);
         }
+
+async verifyRouteCreation(ped) {
+    try {
+        const routeName = "MISS_PATROL_8";
+        
+        // 1. Создаем маршрут
+        native.openPatrolRoute(routeName);
+        
+        native.addPatrolRouteNode(
+            0, 
+            "WORLD_HUMAN_GUARD_STAND",
+            -1266.87, -1443.204, 4.460, 
+            0, 
+            0, 
+            0, 
+            6520
+        );
+
+        native.addPatrolRouteNode(
+            1, 
+            "WORLD_HUMAN_GUARD_STAND",
+            -1269.91, -1438.64, 4.46, 
+            0, 
+            0, 
+            0, 
+            7520
+        );
+/*
+        native.addPatrolRouteNode(
+            2, 
+            "WORLD_HUMAN_GUARD_STAND",
+            -128.4684, -979.0340, 26.2754, 
+            0, 
+            0, 
+            0, 
+            8520
+        );
+*/
+        native.addPatrolRouteLink(0, 1);
+        native.addPatrolRouteLink(1, 0);
+
+        native.closePatrolRoute();
+        native.createPatrolRoute();
+
+        native.taskPatrol(ped, routeName, 0, false, false);
+
+/*
+
+            native.taskGoToCoordAnyMeans(
+                ped.scriptID,
+                -1278.54, -1438.66, 4.66,
+                1.0,    // Скорость
+                0,      // Таймаут
+                false,  // Не использовать транспорт
+                262144, // Флаги для пешехода
+                5.0     // Радиус достижения
+            );
+*/
+
+//await new Promise(resolve => alt.setTimeout(resolve, 10000));
+//alt.log(`Proshlo 10 sec`);
+ /*
+        native.taskPatrol(
+            ped,        //ped
+            routeName,  //patrolRouteName
+            0,          //alertState
+            false,      //canChatToPeds
+            false       //useHeadLookAt
+        );
+        
+*/
+    } catch (error) {
+        alt.log(`Verify error: ${error}`);
+    }
+}
+
+
 
 }
 new PatrolClient();
