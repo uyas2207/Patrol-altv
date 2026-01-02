@@ -17,7 +17,7 @@ class PatrolServer {
     }
 
     init(){
-        alt.on('playerConnect', (player) => {
+        alt.on('playerConnect', async (player) => {
             player.spawn(-1269.91, -1438.64, 4.46);
             player.rot = new alt.Vector3(0, 0, -2.5);
             //chat.send(player, `Игрок ${player} зашел на сервер (PatrolServer)`);
@@ -25,6 +25,8 @@ class PatrolServer {
             //alt.log(`npc:setup: ${JSON.stringify(this.currentPed, null, '\t')}`);
             //alt.log(`this.currentPed ${this.currentPed}`);
             //this.currentPed.setStreamSyncedMeta("giveWanderTask", true);
+            await new Promise(resolve => alt.setTimeout(resolve, 500));
+            alt.emitClient(player, 'patrol:startPedPatrol');
         });
 
         alt.on('resourceStart', () => {

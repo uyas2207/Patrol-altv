@@ -2,6 +2,8 @@ import * as alt from 'alt-client';
 
 import * as native from 'natives';
 
+import { fullConfig } from './config/config.js';
+
 class PatrolClient {
     constructor() {
         this.currentPed = null;
@@ -11,7 +13,12 @@ class PatrolClient {
         this.viewSectors = 6;
 
         this.isPlayerInSight = false;
-        
+ 
+        this.fullRouteConfig = fullConfig;
+        this.routePointsMap = new Map();
+
+
+        this.markerColour =  this.fullRouteConfig.routePoints[0].markerColour;
 
         this.init();
     }
@@ -24,6 +31,8 @@ class PatrolClient {
 
         this.currentPed = entity;
         alt.log(`this.currentPed.scriptID: ${this.currentPed.scriptID}`);
+
+        alt.log(`this.markerColour: ${JSON.stringify(this.markerColour)}`);
 
         this.setPedClient(this.currentPed.scriptID);
         /*
@@ -38,23 +47,84 @@ class PatrolClient {
         */
     });
     
-        
+        /*
         alt.everyTick(() => {
             if (!this.currentPed || !this.currentPed.valid) return;
-            this.drawPedVisionCone(this.currentPed);
+            this.drawPedVisionCone();
+            this.connectNodesLine();
         });
-        
+        */
 
-            alt.onServer('patrol:startPedPatrol', () => {
+        alt.onServer('patrol:startPedPatrol', () => {
+            this.initializeMap();
                 //alt.log(`Пришло с сервера patrol:startPedPatrol`);
                 //this.createPatrolRouteFixed(this.currentPed);
-            });
-
+            this.fullRouteConfig.routePoints.forEach((point) => {                                                       //создание маркеров
+            const marker = new alt.Marker(
+                point.markerType, 
+                new alt.Vector3(point.coordinates.x, point.coordinates.y, point.coordinates.z,), 
+                //point.markerColour
+                new alt.RGBA(point.markerColour.r, point.markerColour.g, point.markerColour.b)
+            );
+            marker.scale = point.markerScale;
+        });
+        });
     }
 
-drawPedVisionCone(ped) {
-    const pos = ped.pos;
-    const heading = native.getEntityHeading(ped.scriptID);
+    initializeMap(){
+        this.fullRouteConfig.routePoints.forEach((point, index) => {
+            this.routePointsMap.set(index,{
+                id: index,
+                ...point
+
+            });
+        });
+        //alt.log(`this.routePointsMap: ${JSON.stringify(this.routePointsMap)}`);
+            this.routePointsMap.forEach((value, key) => {
+        alt.log(`Ключ: ${key}, Значение: ${JSON.stringify(value)}`);
+    });
+    }
+
+connectNodesLine(){
+    const points = this.fullRouteConfig.routePoints;
+    
+    if (points.length < 2) return;
+
+    for (let i = 0; i < points.length - 1; i++) {
+        const current = points[i];
+        const next = points[i + 1];
+        native.drawLine(
+            current.coordinates.x,
+            current.coordinates.y,
+            current.coordinates.z,
+            next.coordinates.x,
+            next.coordinates.y,
+            next.coordinates.z,
+            this.markerColour.r,
+            this.markerColour.g,
+            this.markerColour.b,
+            this.markerColour.a
+        );
+    }
+    const last = points[points.length - 1];
+    native.drawLine(
+        last.coordinates.x,
+        last.coordinates.y,
+        last.coordinates.z,
+        points[0].coordinates.x,
+        points[0].coordinates.y,
+        points[0].coordinates.z,
+        this.markerColour.r,
+        this.markerColour.g,
+        this.markerColour.b,
+        this.markerColour.a
+    );
+}
+
+
+drawPedVisionCone() {
+    const pos = this.currentPed.pos;
+    const heading = native.getEntityHeading(this.currentPed.scriptID);
     const player = alt.Player.local; 
     let currentColor;
     
@@ -101,7 +171,7 @@ drawPedVisionCone(ped) {
 
     // проверяет только игрока
     if (player && player.valid) {
-        if (this.isPlayerInVisionCone(ped, player, headingRad, halfAngleRad)) {
+        if (this.isPlayerInVisionCone(this.currentPed, player, headingRad, halfAngleRad)) {
             // Отображаем маркер над игроком
             native.drawMarker(
                 0,
@@ -180,6 +250,7 @@ isPlayerInVisionCone(ped, player, headingRad, halfAngleRad) {
             //native.setBlockingOfNonTemporaryEvents(ped, true);
             //this.testDrawPedVisionCone(this.currentPed);
             //this.createAndVerifyPatrol(this.currentPed);
+            //this.connectNodesLine();
             this.verifyRouteCreation(this.currentPed);
         }
 
@@ -189,70 +260,47 @@ async verifyRouteCreation(ped) {
         
         // 1. Создаем маршрут
         native.openPatrolRoute(routeName);
-        
-        native.addPatrolRouteNode(
-            0, 
-            "WORLD_HUMAN_GUARD_STAND",
-            -1266.87, -1443.204, 4.460, 
-            0, 
-            0, 
-            0, 
-            6520
-        );
 
-        native.addPatrolRouteNode(
-            1, 
-            "WORLD_HUMAN_GUARD_STAND",
-            -1269.91, -1438.64, 4.46, 
-            0, 
-            0, 
-            0, 
-            7520
-        );
-/*
-        native.addPatrolRouteNode(
-            2, 
-            "WORLD_HUMAN_GUARD_STAND",
-            -128.4684, -979.0340, 26.2754, 
-            0, 
-            0, 
-            0, 
-            8520
-        );
-*/
-        native.addPatrolRouteLink(0, 1);
-        native.addPatrolRouteLink(1, 0);
+this.fullRouteConfig.routePoints.forEach((point, index) => {        
+    native.addPatrolRouteNode(
+        index,
+        point.animation,
+        point.coordinates.x,
+        point.coordinates.y,
+        point.coordinates.z,
+        point.rotation.x,
+        point.rotation.y,
+        point.rotation.z,
+        point.waitTime
+    );
+});
+    const points = this.fullRouteConfig.routePoints;
+    
+   // if (points.length < 2) return;
+    
+    //native.addPatrolRouteLink(0, 1);
+    //native.addPatrolRouteLink(1, 2);
+    //native.addPatrolRouteLink(2, 0);
+
+this.fullRouteConfig.routePoints.forEach((point, index) => {
+        //const current = points[index];
+        //alt.log(`current: ${JSON.stringify(current)}`);
+        const next = points[index + 1];
+       //alt.log(`next: ${JSON.stringify(next)}`);
+        if (points[index + 1]) {
+            native.addPatrolRouteLink(index, index+1);
+        }else{
+            native.addPatrolRouteLink(index, 0);
+        }
+//        native.addPatrolRouteLink(1, 0);
+});
 
         native.closePatrolRoute();
         native.createPatrolRoute();
 
         native.taskPatrol(ped, routeName, 0, false, false);
 
-/*
 
-            native.taskGoToCoordAnyMeans(
-                ped.scriptID,
-                -1278.54, -1438.66, 4.66,
-                1.0,    // Скорость
-                0,      // Таймаут
-                false,  // Не использовать транспорт
-                262144, // Флаги для пешехода
-                5.0     // Радиус достижения
-            );
-*/
-
-//await new Promise(resolve => alt.setTimeout(resolve, 10000));
-//alt.log(`Proshlo 10 sec`);
- /*
-        native.taskPatrol(
-            ped,        //ped
-            routeName,  //patrolRouteName
-            0,          //alertState
-            false,      //canChatToPeds
-            false       //useHeadLookAt
-        );
-        
-*/
     } catch (error) {
         alt.log(`Verify error: ${error}`);
     }
