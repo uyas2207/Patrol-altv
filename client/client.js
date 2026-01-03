@@ -7,17 +7,19 @@ import { fullConfig } from './config/config.js';
 class PatrolClient {
     constructor() {
         this.currentPed = null;
+        this.debug = null;
+        this.patrolName = "miss_route_1";
 
         this.viewDistance = 4;     // длина конуса
         this.viewAngle = 80;         // угол обзора (градусы)
-        this.viewSectors = 6;
+        this.viewSectors = 7;
 
         this.isPlayerInSight = false;
  
         this.fullRouteConfig = fullConfig;
         this.routePointsMap = new Map();
 
-
+        //alt.clearEveryTick(this.keyCheckHandler);
         this.markerColour =  this.fullRouteConfig.routePoints[0].markerColour;
 
         this.init();
@@ -46,28 +48,28 @@ class PatrolClient {
         }
         */
     });
-    
-        /*
-        alt.everyTick(() => {
-            if (!this.currentPed || !this.currentPed.valid) return;
-            this.drawPedVisionCone();
-            this.connectNodesLine();
-        });
-        */
 
         alt.onServer('patrol:startPedPatrol', () => {
             this.initializeMap();
-                //alt.log(`Пришло с сервера patrol:startPedPatrol`);
-                //this.createPatrolRouteFixed(this.currentPed);
-            this.fullRouteConfig.routePoints.forEach((point) => {                                                       //создание маркеров
-            const marker = new alt.Marker(
-                point.markerType, 
-                new alt.Vector3(point.coordinates.x, point.coordinates.y, point.coordinates.z,), 
-                //point.markerColour
-                new alt.RGBA(point.markerColour.r, point.markerColour.g, point.markerColour.b)
-            );
-            marker.scale = point.markerScale;
         });
+
+        //отображать debug, после команды с сервера
+        alt.onServer('patrol:debugTurnOn', () => {
+            this.debug = alt.everyTick(() => {
+                if (!this.currentPed || !this.currentPed.valid) return;
+                this.drawPedVisionCone();
+                this.drawNodeMarkers();
+                this.connectNodesLine();
+            });
+            alt.log(`debugTurnOn`);
+        });
+        
+        //выключать debug, после команды с сервера
+        alt.onServer('patrol:debugTurnOff', () => {
+            alt.clearEveryTick(this.debug);
+            this.debug = null;
+            //native.deletePatrolRoute(this.patrolName);
+            alt.log(`debugTurnOff`);
         });
     }
 
@@ -80,9 +82,28 @@ class PatrolClient {
             });
         });
         //alt.log(`this.routePointsMap: ${JSON.stringify(this.routePointsMap)}`);
-            this.routePointsMap.forEach((value, key) => {
-        alt.log(`Ключ: ${key}, Значение: ${JSON.stringify(value)}`);
-    });
+        this.routePointsMap.forEach((value, key) => {
+            alt.log(`Значение: ${JSON.stringify(value, null, 2)}`);
+            //alt.log(`Ключ: ${key}`);
+            //alt.log(value);
+        });
+    }
+    
+
+        //const points = this.fullRouteConfig.routePoints;
+    drawNodeMarkers(){
+
+        this.fullRouteConfig.routePoints.forEach((point) => {                                                       //создание маркеров
+            native.drawMarker(
+                point.markerType,
+                point.coordinates.x, point.coordinates.y, point.coordinates.z,
+                0, 0, 0,
+                0, 0, 0,
+                point.markerScale.x, point.markerScale.y, point.markerScale.z,
+                point.markerColour.r, point.markerColour.g, point.markerColour.b, point.markerColour.a,
+                false, true, 2, 0, 0, 0, false
+            );
+        });
     }
 
 connectNodesLine(){
@@ -180,7 +201,7 @@ drawPedVisionCone() {
                 0, 0, 0,
                 0.15, 0.15, 0.15,
                 255, 0, 0, 200,
-                false, true, 2, 0, 0, 0, false
+                true, true, 2, 0, 0, 0, false
             );
 
             if (!this.isPlayerInSight) {
@@ -251,15 +272,19 @@ isPlayerInVisionCone(ped, player, headingRad, halfAngleRad) {
             //this.testDrawPedVisionCone(this.currentPed);
             //this.createAndVerifyPatrol(this.currentPed);
             //this.connectNodesLine();
+            const heading = native.getEntityHeading(this.currentPed.scriptID);
+            const headingRad = heading * Math.PI / 180;
+            alt.log(`heading: ${heading}`);
+            
+            alt.log(`headingRad: ${headingRad}`);
             this.verifyRouteCreation(this.currentPed);
         }
 
 async verifyRouteCreation(ped) {
     try {
-        const routeName = "MISS_PATROL_8";
         
         // 1. Создаем маршрут
-        native.openPatrolRoute(routeName);
+        native.openPatrolRoute(this.patrolName);
 
 this.fullRouteConfig.routePoints.forEach((point, index) => {        
     native.addPatrolRouteNode(
@@ -298,7 +323,7 @@ this.fullRouteConfig.routePoints.forEach((point, index) => {
         native.closePatrolRoute();
         native.createPatrolRoute();
 
-        native.taskPatrol(ped, routeName, 0, false, false);
+        native.taskPatrol(ped, this.patrolName, 0, false, true);
 
 
     } catch (error) {

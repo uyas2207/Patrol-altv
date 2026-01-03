@@ -3,16 +3,29 @@ import * as alt from 'alt-server';
 // Your chat resource module.
 import * as chat from 'alt:chat';
 
+//для работы с файлами
+import * as fs from 'fs';       
+//для работы с путями файлов
+import * as path from 'path';
 
 class PatrolServer {
     constructor() {
         this.currentPed = null;
+        this.routePointsMap = new Map();
+
         this.patrolPoints = [
             new alt.Vector3(-1266.87, -1443.204, 4.460), // Точка A
             new alt.Vector3(-1269.91, -1438.64, 4.44)    // Точка B
         ];
+        
         this.currentPatrolIndex = 0;
         this.isPatrolling = false;
+
+        this.debug = true;
+
+            //const configData = fs.readFileSync(configPath, 'utf8');
+            //const fullConfig = JSON.parse(configData);
+
         this.init();
     }
 
@@ -20,6 +33,9 @@ class PatrolServer {
         alt.on('playerConnect', async (player) => {
             player.spawn(-1269.91, -1438.64, 4.46);
             player.rot = new alt.Vector3(0, 0, -2.5);
+            //Проверка на случай если игрок заходит на сервер когда на сервере включен debug
+            if (this.debug) alt.emitClient(player, 'patrol:debugTurnOn');
+            
             //chat.send(player, `Игрок ${player} зашел на сервер (PatrolServer)`);
             //alt.emitAllClients("npc:setup", this.currentPed.id);
             //alt.log(`npc:setup: ${JSON.stringify(this.currentPed, null, '\t')}`);
@@ -35,6 +51,26 @@ class PatrolServer {
             alt.setTimeout(() => {
                // this.startPatrolling();
             }, 2000);
+        });
+
+        chat.registerCmd('path', (player) => {
+            chat.send(player, `Текущая позиция: ${player.pos}`);
+            chat.send(player, `Текущая rotation: ${player.rot}`);
+            alt.log(`player.rot: ${player.rot}`);
+            // player.rot
+        });
+        
+        chat.registerCmd('debug', (player) => {
+            if(!this.debug){
+                this.debug = true;
+                alt.emitClient(player, 'patrol:debugTurnOn');
+                chat.send(player, `Debug on`);
+            }
+            else{
+                this.debug = false;
+                alt.emitClient(player, 'patrol:debugTurnOff');
+                chat.send(player, `Debug off`);
+            }
         });
 
     }
