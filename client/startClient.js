@@ -3,6 +3,7 @@ import * as alt from 'alt-client';
 import * as native from 'natives';
 
 import { fullConfig } from './config/config.js';
+import { defaultClientConfig } from './config/secondConfig.js';
 
 class PatrolClient {
     constructor() {
@@ -17,6 +18,10 @@ class PatrolClient {
         this.isPlayerInSight = false;
  
         this.fullRouteConfig = fullConfig;
+
+        this.defaultConfig = defaultClientConfig;
+
+        this.serverRoutes = null;
         this.routePointsMap = new Map();
 
         //alt.clearEveryTick(this.keyCheckHandler);
@@ -27,16 +32,16 @@ class PatrolClient {
 
     init(){
         
-    alt.on('gameEntityCreate', async (entity) => {
-        alt.log('gameEntityCreate');
-        if(!(entity instanceof alt.Ped)) return;
+        alt.on('gameEntityCreate', async (entity) => {
+            alt.log('gameEntityCreate');
+            if(!(entity instanceof alt.Ped)) return;
 
-        this.currentPed = entity;
-        alt.log(`this.currentPed.scriptID: ${this.currentPed.scriptID}`);
+            this.currentPed = entity;
+            alt.log(`this.currentPed.scriptID: ${this.currentPed.scriptID}`);
 
-        alt.log(`this.markerColour: ${JSON.stringify(this.markerColour)}`);
+            alt.log(`this.markerColour: ${JSON.stringify(this.markerColour)}`);
 
-        this.setPedClient(this.currentPed.scriptID);
+            this.setPedClient(this.currentPed.scriptID);
         /*
         alt.log("=== ВСЁ О PED ===");
         for (let key in entity) {
@@ -47,7 +52,11 @@ class PatrolClient {
             }
         }
         */
-    });
+        });
+
+        alt.onServer('patrol:initRoutes', (routeData) => {
+            this.serverRoutes = routeData;
+        });
 
         alt.onServer('patrol:startPedPatrol', () => {
             this.initializeMap();
@@ -71,22 +80,28 @@ class PatrolClient {
             //native.deletePatrolRoute(this.patrolName);
             alt.log(`debugTurnOff`);
         });
+
+        alt.onServer('patrol:asignCurrentRouteToPed', () => {
+            this.asignCurrentRouteToPed(this.currentPed);
+            alt.log(`asignCurrentRouteToPed`);
+        });
     }
 
     initializeMap(){
-        this.fullRouteConfig.routePoints.forEach((point, index) => {
+        this.serverRoutes.routes.forEach((route, index) => {
             this.routePointsMap.set(index,{
                 id: index,
-                ...point
+                ...route
 
             });
         });
         //alt.log(`this.routePointsMap: ${JSON.stringify(this.routePointsMap)}`);
         this.routePointsMap.forEach((value, key) => {
-            alt.log(`Значение: ${JSON.stringify(value, null, 2)}`);
-            //alt.log(`Ключ: ${key}`);
-            //alt.log(value);
+           // alt.log(`Значение: ${JSON.stringify(value, null, 2)}`);
+            alt.log(`Ключ: ${key}`);
+            alt.log(value);
         });
+        //alt.log(`this.defaultConfig: ${JSON.stringify(this.defaultConfig)}`);
     }
     
 
@@ -95,12 +110,12 @@ class PatrolClient {
 
         this.fullRouteConfig.routePoints.forEach((point) => {                                                       //создание маркеров
             native.drawMarker(
-                point.markerType,
+                this.defaultConfig.markerType,
                 point.coordinates.x, point.coordinates.y, point.coordinates.z,
                 0, 0, 0,
                 0, 0, 0,
-                point.markerScale.x, point.markerScale.y, point.markerScale.z,
-                point.markerColour.r, point.markerColour.g, point.markerColour.b, point.markerColour.a,
+                this.defaultConfig.markerScale.x, this.defaultConfig.markerScale.y, this.defaultConfig.markerScale.z,
+                this.defaultConfig.markerColour.r, this.defaultConfig.markerColour.g, this.defaultConfig.markerColour.b, this.defaultConfig.markerColour.a,
                 false, true, 2, 0, 0, 0, false
             );
         });
@@ -121,10 +136,10 @@ connectNodesLine(){
             next.coordinates.x,
             next.coordinates.y,
             next.coordinates.z,
-            this.markerColour.r,
-            this.markerColour.g,
-            this.markerColour.b,
-            this.markerColour.a
+            this.defaultConfig.markerColour.r,
+            this.defaultConfig.markerColour.g,
+            this.defaultConfig.markerColour.b,
+            this.defaultConfig.markerColour.a
         );
     }
     const last = points[points.length - 1];
@@ -135,10 +150,10 @@ connectNodesLine(){
         points[0].coordinates.x,
         points[0].coordinates.y,
         points[0].coordinates.z,
-        this.markerColour.r,
-        this.markerColour.g,
-        this.markerColour.b,
-        this.markerColour.a
+        this.defaultConfig.markerColour.r,
+        this.defaultConfig.markerColour.g,
+        this.defaultConfig.markerColour.b,
+        this.defaultConfig.markerColour.a
     );
 }
 
@@ -277,11 +292,9 @@ isPlayerInVisionCone(ped, player, headingRad, halfAngleRad) {
             alt.log(`heading: ${heading}`);
             
             alt.log(`headingRad: ${headingRad}`);
-            this.verifyRouteCreation(this.currentPed);
         }
 
-async verifyRouteCreation(ped) {
-    try {
+async asignCurrentRouteToPed(ped) {
         
         // 1. Создаем маршрут
         native.openPatrolRoute(this.patrolName);
@@ -289,7 +302,7 @@ async verifyRouteCreation(ped) {
 this.fullRouteConfig.routePoints.forEach((point, index) => {        
     native.addPatrolRouteNode(
         index,
-        point.animation,
+        this.defaultConfig.animation,
         point.coordinates.x,
         point.coordinates.y,
         point.coordinates.z,
@@ -325,10 +338,6 @@ this.fullRouteConfig.routePoints.forEach((point, index) => {
 
         native.taskPatrol(ped, this.patrolName, 0, false, true);
 
-
-    } catch (error) {
-        alt.log(`Verify error: ${error}`);
-    }
 }
 
 

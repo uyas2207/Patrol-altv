@@ -1,6 +1,6 @@
-
- {
- "routes":[{
+{
+ "routes":[
+  {
     "id": 1,
     "name": "route_1",
     "looped": true,
@@ -24,5 +24,6 @@
         "waitTime": 1000
       }
     ]
- }]
  }
+]
+}

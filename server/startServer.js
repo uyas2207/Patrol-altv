@@ -12,19 +12,14 @@ class PatrolServer {
     constructor() {
         this.currentPed = null;
         this.routePointsMap = new Map();
-
-        this.patrolPoints = [
-            new alt.Vector3(-1266.87, -1443.204, 4.460), // Точка A
-            new alt.Vector3(-1269.91, -1438.64, 4.44)    // Точка B
-        ];
         
         this.currentPatrolIndex = 0;
         this.isPatrolling = false;
 
         this.debug = true;
 
-            //const configData = fs.readFileSync(configPath, 'utf8');
-            //const fullConfig = JSON.parse(configData);
+        this.configData = fs.readFileSync('./resources/patrol/shared/routePoints.json', 'utf8');
+        this.routeData = JSON.parse(this.configData);
 
         this.init();
     }
@@ -35,22 +30,32 @@ class PatrolServer {
             player.rot = new alt.Vector3(0, 0, -2.5);
             //Проверка на случай если игрок заходит на сервер когда на сервере включен debug
             if (this.debug) alt.emitClient(player, 'patrol:debugTurnOn');
-            
+            alt.emitClient(player, 'patrol:initRoutes', this.routeData);
+
+
             //chat.send(player, `Игрок ${player} зашел на сервер (PatrolServer)`);
             //alt.emitAllClients("npc:setup", this.currentPed.id);
             //alt.log(`npc:setup: ${JSON.stringify(this.currentPed, null, '\t')}`);
             //alt.log(`this.currentPed ${this.currentPed}`);
             //this.currentPed.setStreamSyncedMeta("giveWanderTask", true);
+
+
             await new Promise(resolve => alt.setTimeout(resolve, 500));
             alt.emitClient(player, 'patrol:startPedPatrol');
         });
 
         alt.on('resourceStart', () => {
             this.spawnDefaultNpcs();
-            // Запускаем патрулирование через 2 секунды после спавна
+            
             alt.setTimeout(() => {
-               // this.startPatrolling();
-            }, 2000);
+/*
+                this.routeData.routes.forEach(route => {
+                    route.nodes.forEach(node => {
+                        alt.log(node);
+                    });
+                });
+*/
+            }, 1000);
         });
 
         chat.registerCmd('path', (player) => {
@@ -73,6 +78,12 @@ class PatrolServer {
             }
         });
 
+        chat.registerCmd('asign', (player) => {
+            alt.emitClient(player, 'patrol:asignCurrentRouteToPed');
+            chat.send(player, `Asigned route to ped`);
+        });
+
+        
     }
 
 
