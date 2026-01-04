@@ -16,7 +16,7 @@ class PatrolServer {
         this.currentPatrolIndex = 0;
         this.isPatrolling = false;
 
-        this.debug = true;
+        this.debug = false;
 
         this.configData = fs.readFileSync('./resources/patrol/shared/routePoints.json', 'utf8');
         this.routeData = JSON.parse(this.configData);
@@ -30,7 +30,7 @@ class PatrolServer {
             player.rot = new alt.Vector3(0, 0, -2.5);
             //Проверка на случай если игрок заходит на сервер когда на сервере включен debug
             if (this.debug) alt.emitClient(player, 'patrol:debugTurnOn');
-            alt.emitClient(player, 'patrol:initRoutes', this.routeData);
+            alt.emitClient(player, 'patrol:initRoutes', this.routeData);    ///path load <name>
 
 
             //chat.send(player, `Игрок ${player} зашел на сервер (PatrolServer)`);
@@ -78,15 +78,56 @@ class PatrolServer {
             }
         });
 
-        chat.registerCmd('asign', (player) => {
+        chat.registerCmd('asign', (player) => { //ped assign <pedId> <pathName>
             alt.emitClient(player, 'patrol:asignCurrentRouteToPed');
             chat.send(player, `Asigned route to ped`);
         });
 
+
+        chat.registerCmd('addnode', (player, arg) => {   //path addnode
+            const result = (this.checkArgument(player, arg));
+            if (result === false){ 
+                chat.send(player, `Испрользование addnode /addnode node_id`);
+                return
+            }
+            //alt.log('player.pos', player.pos);
+            const roundedPos = {
+                x: parseFloat(player.pos.x.toFixed(2)),
+                y: parseFloat(player.pos.y.toFixed(2)),
+                z: parseFloat(player.pos.z.toFixed(2))
+            };
+            //alt.log('roundedPos', roundedPos);
+            alt.emitClient(player, 'patrol:addNode', roundedPos, result);
+            chat.send(player, `/addnode ${result}`);
+        });
         
+
+        chat.registerCmd('dellnode', (player, arg) => { ///path removenode <index>
+            const result = (this.checkArgument(player, arg));
+            if (result === false){
+                chat.send(player, `Испрользование dellnode /dellnode node_id`);
+                return;
+            }
+            alt.emitClient(player, 'patrol:dellNode', (result));
+            chat.send(player, `/dellNode ${result}`);
+        });
     }
 
-
+    //универсальная проверка аргумента в командах, аругмент может быть только целым числом от 0 до 9
+    //при провале возвращает false, при успехе значение корректного аргумента(parseInt(arg[0]))
+        checkArgument(player, arg){
+            if(arg.length !== 1){
+                chat.send(player, `Некорректное количество аргументов`);
+                return false;
+            }
+            const parsedArg = parseInt(arg[0]);
+            if (isNaN(parsedArg) || arg[0].length !==1 || parsedArg < 0 || parsedArg > 9){
+                chat.send(player, 'Неправильный аругмент, аргументом может быть только целое число от 0 до 9');
+                return false;
+            }
+            alt.log('parsedArg =', parsedArg)
+            return parsedArg;
+        }
     
     spawnDefaultNpcs = () =>{
         // Охранник у банка
