@@ -2,12 +2,11 @@ import * as alt from 'alt-client';
 
 import * as native from 'natives';
 
-import { fullConfig } from './config/config.js';
 import { defaultClientConfig } from './config/secondConfig.js';
 
-export function drawNotification(message, autoHide = false) {
+function drawNotification(message, autoHide = false) {
     native.beginTextCommandThefeedPost('STRING');
-    native.addTextComponentSubstringPlayerName(message);
+    native.addTextComponentSubstringPlayerName(`~r~${message}`);
     const notificationId = native.endTextCommandThefeedPostTicker(false, false);
     // Таймер для скрытия уведомления через 3 секунды если кроме текста сообщения также передали true
     if (autoHide) {
@@ -20,7 +19,7 @@ export function drawNotification(message, autoHide = false) {
 class PatrolClient {
     constructor() {
         this.currentPed = null;
-        this.debug = null;
+        this.debug = null;              
         this.patrolName = "miss_";
 
         this.viewDistance = 4;     // длина конуса
@@ -28,16 +27,12 @@ class PatrolClient {
         this.viewSectors = 7;
 
         this.isPlayerInSight = false;
- 
-        this.fullRouteConfig = fullConfig;
 
         this.defaultConfig = defaultClientConfig;
 
-        this.serverRoutes = null;
         this.routePointsMap = new Map();
 
-        //alt.clearEveryTick(this.keyCheckHandler);
-        this.markerColour =  this.fullRouteConfig.routePoints[0].markerColour;
+        this.visionConeColour = [0, 255, 0, 200];
 
         this.init();
     }
@@ -51,33 +46,20 @@ class PatrolClient {
             this.currentPed = entity;
             alt.log(`this.currentPed.scriptID: ${this.currentPed.scriptID}`);
 
-            alt.log(`this.markerColour: ${JSON.stringify(this.markerColour)}`);
 
             this.setPedClient(this.currentPed.scriptID);
-        /*
-        alt.log("=== ВСЁ О PED ===");
-        for (let key in entity) {
-            try {
-                alt.log(`${key} = ${entity[key]}`);
-            } catch (error) {
-                // нужно что бы код продолжил выполняться после ошибки если она будет
-            }
-        }
-        */
         });
 
-        alt.onServer('patrol:initRoutes', (routeData) => {
-            this.serverRoutes = routeData;
+        alt.onServer('patrol:initRoutes', (route) => {
+            this.initializeMap(route);
         });
 
-        alt.onServer('patrol:startPedPatrol', () => {
-            this.initializeMap();
-        });
 
         //отображать debug, после команды с сервера
         alt.onServer('patrol:debugTurnOn', () => {
+            if (!this.currentPed || !this.currentPed.valid) return;
             this.debug = alt.everyTick(() => {
-                if (!this.currentPed || !this.currentPed.valid) return;
+                
                 this.drawPedVisionCone();
                 this.drawNodeMarkers();
                 this.connectNodesLine();
@@ -107,42 +89,52 @@ class PatrolClient {
             this.dellNodeFromMap(arg);
             alt.log(`dellNode`);
         });
+
+        alt.onServer('patrol:askForRouteMap', () => {
+            if ( this.routePointsMap.size === 0 ) {
+                alt.log('Попытка созранить пустой route');
+                drawNotification(`Нельзя сохранять ПУСТОЙ route`);
+                return;
+            }
+            alt.log('askForRouteMap + sendRouteMap');
+            const savingArray = {
+                id: this.currentRouteAttributes.id,
+                name: this.currentRouteAttributes.name,
+                looped: this.currentRouteAttributes.looped,
+                nodes: Array.from(this.routePointsMap.values())
+            }
+            alt.log('savingArray:', JSON.stringify(savingArray));
+            alt.emitServer('patrol:sendRouteMap', savingArray);
+        });
+
+        alt.onServer('patrol:clearCurrentRoute', () => {
+            this.currentRouteAttributes = null;
+            //this.routePointsMap = new Map();
+            this.routePointsMap.clear();
+        });
     }
 
-    initializeMap(){
+    initializeMap(route){
+
+        this.currentRouteAttributes = { //запоминает доп параметры маршрута
+            id: route.id,
+            name: route.name,
+            looped: route.looped
+        };
+    
+        alt.log('currentRouteAttributes', JSON.stringify(this.currentRouteAttributes));
+
         
-    //this.serverRoutes.routes.forEach((route, routeIndex) => {
-        //this.currentRouteAttributes.set(route.id, route.name, route.looped);
-    //});
+        this.routePointsMap.clear();    //делает map пустым (на случай если уже существует актинвый map с которым воыполняется работа до этого initializeMap)
 
-    const route = this.serverRoutes.routes[0];
+        route.nodes.forEach(node => {
+            this.routePointsMap.set(node.index, node);
+        });
 
-    this.currentRouteAttributes = {
-        id: route.id,
-        name: route.name,
-        looped: route.looped
-    };
-    alt.log('currentRouteAttributes', JSON.stringify(this.currentRouteAttributes));
-
-    route.nodes.forEach(node => {
-        this.routePointsMap.set(node.index, node);
+    this.routePointsMap.forEach((value, key) => {
+        alt.log(`Ключ: ${key}`);
+        alt.log(value);
     });
-/*
-        this.serverRoutes.routes.forEach((route, index) => {
-            this.routePointsMap.set(index,{
-                id: index,
-                ...route
-
-            });
-        });
-        */
-        //alt.log(`this.routePointsMap: ${JSON.stringify(this.routePointsMap)}`);
-        this.routePointsMap.forEach((value, key) => {
-            alt.log(`Ключ: ${key}`);
-            alt.log(value);
-        });
-        //this.connectNodesLine();
-        //alt.log(`this.defaultConfig: ${JSON.stringify(this.defaultConfig)}`);
     }
 
     dellNodeFromMap(arg){
@@ -174,32 +166,27 @@ class PatrolClient {
             waitTime: 1000
         }
 
-    //создает массив из значений map
-    const tempArray = Array.from(this.routePointsMap.entries());
-    //добавляет в новую ноду с ее значениями
-    tempArray.push([arg, newnode]);
-    //сортирует массив по его key, что бы ноды шли в возрастающем порядке key (в случае с моим map key всегда равны index)
-    tempArray.sort((a, b) => a[0] - b[0]);
+        //создает массив из значений map
+        const tempArray = Array.from(this.routePointsMap.entries());
+        //добавляет в новую ноду с ее значениями
+        tempArray.push([arg, newnode]);
+        //сортирует массив по его key, что бы ноды шли в возрастающем порядке key (в случае с моим map key всегда равны index)
+        tempArray.sort((a, b) => a[0] - b[0]);
     
-    // пересоздает map заполняя его правильно отсортированными значениями
-    this.routePointsMap = new Map(tempArray);
-
-        //this.routePointsMap.set( arg, newnode);
+        // пересоздает map заполняя его правильно отсортированными значениями
+        this.routePointsMap.clear();
+        this.routePointsMap = new Map(tempArray);
        
         alt.log('Весь Map после добавления новой ноды');
         this.routePointsMap.forEach((value, key) => {
             alt.log(`Ключ: ${key}`);
             alt.log(value);
         });
-
     }
 
-    //this.routePointsMap.set(node.index, node);
-
-        //const points = this.fullRouteConfig.routePoints;
+    //создание маркеров
     drawNodeMarkers(){
-
-        this.routePointsMap.forEach((point) => {                                                       //создание маркеров
+        this.routePointsMap.forEach((point) => {
             native.drawMarker(
                 this.defaultConfig.markerType + point.index,
                 point.position.x, point.position.y, point.position.z,
@@ -211,24 +198,12 @@ class PatrolClient {
             );
         });
     }
-
-    //const points = this.routePointsMap[0].nodes;
-    //const route = this.routePointsMap.values().next().value;
-    //await new Promise(resolve => alt.setTimeout(resolve, 5000));
-    
-    //const points2 = this.serverRoutes.routes.nodes.position;
-    
-    //alt.log(JSON.stringify(points2));
-    //const points = this.routePointsMap.routes.nodes[0].position;
-    //    const currentPoint = this.routePointsMap.get(0);
-    //alt.log(JSON.stringify(points));
-
+//отображение линий между маркерами (показывает от какого маркера к какому будет ходить ped)
 connectNodesLine(){
     if (this.routePointsMap.size < 2) return;
  
     const first = this.routePointsMap.values().next().value;
     let prev = null;
-
 
     this.routePointsMap.forEach((current) => {
         if (current !== first) {
@@ -249,7 +224,6 @@ connectNodesLine(){
     });
 
     if (this.currentRouteAttributes.looped) {
-
         native.drawLine(
             prev.position.x,
             prev.position.y,
@@ -265,19 +239,11 @@ connectNodesLine(){
     }
 }
 
-
+//отображение области видимости ped
 drawPedVisionCone() {
     const pos = this.currentPed.pos;
     const heading = native.getEntityHeading(this.currentPed.scriptID);
-    const player = alt.Player.local; 
-    let currentColor;
-    
-    if (this.isPlayerInSight) {
-        currentColor = [255, 0, 0, 200];
-    } 
-    else {
-        currentColor = [0, 255, 0, 200];
-    }
+    const player = alt.Player.local;
 
     const headingRad = heading * Math.PI / 180;
     const halfAngleRad = (this.viewAngle / 2) * Math.PI / 180;
@@ -285,7 +251,6 @@ drawPedVisionCone() {
 
     let prevPoint = null;
 
-    // Отрисовка конуса видимости
     for (let i = -halfAngleRad; i <= halfAngleRad; i += stepAngleRad) {
         const currentAngle = headingRad + i;
 
@@ -299,24 +264,21 @@ drawPedVisionCone() {
         native.drawLine(
             pos.x, pos.y, pos.z + 0.1,
             x, y, z + 0.1,
-            currentColor[0], currentColor[1], currentColor[2], currentColor[3]
+            this.visionConeColour[0], this.visionConeColour[1], this.visionConeColour[2], this.visionConeColour[3]
         );
 
         if (prevPoint) {
             native.drawLine(
                 prevPoint.x, prevPoint.y, prevPoint.z + 0.1,
                 x, y, z + 0.1,
-                currentColor[0], currentColor[1], currentColor[2], currentColor[3]
+                this.visionConeColour[0], this.visionConeColour[1], this.visionConeColour[2], this.visionConeColour[3]
             );
         }
 
         prevPoint = { x, y, z };
     }
 
-    // проверяет только игрока
-    if (player && player.valid) {
-        if (this.isPlayerInVisionCone(this.currentPed, player, headingRad, halfAngleRad)) {
-            // Отображаем маркер над игроком
+        if (this.isPlayerInVisionCone(player, headingRad, halfAngleRad)) {
             native.drawMarker(
                 0,
                 player.pos.x, player.pos.y, player.pos.z + 1.0,
@@ -329,55 +291,46 @@ drawPedVisionCone() {
 
             if (!this.isPlayerInSight) {
                 this.isPlayerInSight = true;
+                this.visionConeColour = [255, 0, 0, 200];
                 alt.log('this.isPlayerInSight = true;');
             }
         }
         else {
             if (this.isPlayerInSight) {
                 this.isPlayerInSight = false;
+                this.visionConeColour = [0, 255, 0, 200];
                 alt.log('this.isPlayerInSight = false;');
             }
         }
-    }
 
-    // центральная линия направления взгляда (точка столкновения)
     if (this.isPlayerInSight) {
     native.drawLine(
-        pos.x, pos.y, pos.z + 0.2,
+        pos.x, pos.y, pos.z + 0.1,
         player.pos.x, player.pos.y, player.pos.z + 0.5,
-        //pos.x + Math.sin(-headingRad) * this.viewDistance,
-        //pos.y + Math.cos(-headingRad) * this.viewDistance,
-        //pos.z + 0.2,
-        currentColor[0], currentColor[1], currentColor[2], currentColor[3]
+        this.visionConeColour[0], this.visionConeColour[1], this.visionConeColour[2], this.visionConeColour[3]
     );
     }
 }
 
-isPlayerInVisionCone(ped, player, headingRad, halfAngleRad) {
-    const pedPos = ped.pos;
+isPlayerInVisionCone(player, headingRad, halfAngleRad) {
+    const pedPos = this.currentPed.pos;
     const playerPos = player.pos;
 
-    // Вектор от ped к игроку
     const toPlayerX = playerPos.x - pedPos.x;
     const toPlayerY = playerPos.y - pedPos.y;
 
-    // Дистанция
     const distance = Math.sqrt(toPlayerX * toPlayerX + toPlayerY * toPlayerY);
     if (distance > this.viewDistance) return false;
 
-    // Нормализованный вектор "вперёд" (ТОЧНО как в drawPedVisionCone)
     const forwardX = Math.sin(-headingRad);
     const forwardY = Math.cos(-headingRad);
 
-    // Нормализованный вектор на игрока
     const len = Math.sqrt(toPlayerX * toPlayerX + toPlayerY * toPlayerY);
     const dirToPlayerX = toPlayerX / len;
     const dirToPlayerY = toPlayerY / len;
 
-    // Скалярное произведение
     const dot = forwardX * dirToPlayerX + forwardY * dirToPlayerY;
 
-    // Угол между forward и игроком
     const angleToPlayer = Math.acos(dot);
 
     return angleToPlayer <= halfAngleRad;
@@ -399,8 +352,12 @@ isPlayerInVisionCone(ped, player, headingRad, halfAngleRad) {
             alt.log(`headingRad: ${headingRad}`);
         }
 
+//назначение маршрута ped
 async asignCurrentRouteToPed(ped) {
-    
+    if ( this.routePointsMap.size === 0 ){
+        drawNotification(`Нельзя назначить пустой маршрут для патрулирования`);
+        return;
+    }
     native.deletePatrolRoute(`miss_${this.currentRouteAttributes.name}`);
 
         //cоздаем маршрут
@@ -420,28 +377,6 @@ async asignCurrentRouteToPed(ped) {
                 );
         });
 
-    /*
-this.fullRouteConfig.routePoints.forEach((point, index) => {        
-    native.addPatrolRouteNode(
-        index,
-        this.defaultConfig.animation,
-        point.coordinates.x,
-        point.coordinates.y,
-        point.coordinates.z,
-        point.rotation.x,
-        point.rotation.y,
-        point.rotation.z,
-        point.waitTime
-    );
-});
-*/
-    const points = this.fullRouteConfig.routePoints;
-    
-   // if (points.length < 2) return;
-    
-    //native.addPatrolRouteLink(0, 1);
-    //native.addPatrolRouteLink(1, 2);
-    //native.addPatrolRouteLink(2, 0);
 
     const first = this.routePointsMap.values().next().value;
     let prev = null;
@@ -456,21 +391,7 @@ this.fullRouteConfig.routePoints.forEach((point, index) => {
     if (this.currentRouteAttributes.looped) {
         native.addPatrolRouteLink(prev.index, first.index);
     }
-    //-1272.3033447265625, -1447.87255859375, 4.6622314453125
-/*
-this.fullRouteConfig.routePoints.forEach((point, index) => {
-        //const current = points[index];
-        //alt.log(`current: ${JSON.stringify(current)}`);
-        const next = points[index + 1];
-       //alt.log(`next: ${JSON.stringify(next)}`);
-        if (points[index + 1]) {
-            native.addPatrolRouteLink(index, index+1);
-        }else{
-            native.addPatrolRouteLink(index, 0);
-        }
-//        native.addPatrolRouteLink(1, 0);
-});
-*/
+
         native.closePatrolRoute();
         native.createPatrolRoute();
 
@@ -478,7 +399,6 @@ this.fullRouteConfig.routePoints.forEach((point, index) => {
 
 }
 
-
-
 }
+
 new PatrolClient();
