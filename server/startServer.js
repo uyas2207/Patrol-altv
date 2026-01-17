@@ -4,12 +4,15 @@ import * as alt from 'alt-server';
 import * as chat from 'alt:chat';
 
 //для работы с файлами
-import * as fs from 'fs';       
-//для работы с путями файлов
-import * as path from 'path';
+import * as fs from 'fs';
+
+import { defaultParameters } from './config/serverconfig.js';
+import { npcs } from './config/serverconfig.js';
 
 class PatrolServer {
     constructor() {
+        alt.log('defaultParameters:',defaultParameters);
+        alt.log('npcs',npcs.length);
         this.currentPed = null;
         this.routePointsMap = new Map();
         
@@ -28,6 +31,7 @@ class PatrolServer {
         alt.on('playerConnect', async (player) => {
             player.spawn(-1269.91, -1438.64, 4.46);
             player.rot = new alt.Vector3(0, 0, -2.5);
+            await new Promise(resolve => alt.setTimeout(resolve, 500));
             //Проверка на случай если игрок заходит на сервер когда на сервере включен debug
             if (this.debug) alt.emitClient(player, 'patrol:debugTurnOn');
            // alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[1]);
@@ -59,11 +63,43 @@ class PatrolServer {
             }, 1000);
         });
 
-        chat.registerCmd('path', (player) => {
-            chat.send(player, `Текущая позиция: ${player.pos}`);
-            chat.send(player, `Текущая rotation: ${player.rot}`);
-            alt.log(`player.rot: ${player.rot}`);
-            // player.rot
+        chat.registerCmd('pedinfo', (player, arg) => { //выводит всю информацию о ped с id = arg
+            const number = parseInt(arg);
+            alt.emitClient(player, 'patrol:pedinfo', number);
+            alt.log('pedinfo');
+            //chat.send(player, `Asigned route to ped`);
+        });
+
+        chat.registerCmd('route', (player) => {     //выводит все значения mainmap
+            alt.emitClient(player, 'patrol:route');
+        });
+
+        chat.registerCmd('pedmap', (player) => {    //выводит все значения pedmap
+            alt.emitClient(player, 'patrol:pedMap');
+        });
+        
+        chat.registerCmd('peddebug', (player, arg) => {    
+            if(arg.length !== 1){
+                chat.send(player, `Некорректное количество аргументов`);
+                return;
+            }
+            const pedId = parseInt(arg[0]);
+            if (isNaN(pedId) || arg[0].length !== 1 || pedId < 1 || pedId > npcs.length){
+                chat.send(player, `Аругментом может быть только целое число от 1 до ${npcs.length}`);
+            }
+            alt.emitClient(player, 'patrol:pedDebug', pedId);
+        });
+
+        chat.registerCmd('stop', (player, arg) => { // /ped stop <pedId>
+            if(arg.length !== 1){
+                chat.send(player, `Некорректное количество аргументов`);
+                return;
+            }
+            const pedId = parseInt(arg[0]);
+            if (isNaN(pedId) || arg[0].length !== 1 || pedId < 1 || pedId > npcs.length){
+                chat.send(player, `Аругментом может быть только целое число от 1 до ${npcs.length}`);
+            }
+            alt.emitClient(player, 'patrol:pedStop', pedId);
         });
         
         chat.registerCmd('debug', (player) => {
@@ -79,8 +115,27 @@ class PatrolServer {
             }
         });
 
-        chat.registerCmd('asign', (player) => { //ped assign <pedId> <pathName>
-            alt.emitClient(player, 'patrol:asignCurrentRouteToPed');
+        chat.registerCmd('asign', (player, arg) => { //ped assign <pedId> <pathName>
+            if(arg.length !== 2){
+                chat.send(player, `Некорректное количество аргументов`);
+                return;
+            }
+            const pedId = parseInt(arg[0]);
+            if (isNaN(pedId) || arg[0].length !== 1 || pedId < 1 || pedId > npcs.length){
+                chat.send(player, `Аругментом может быть только целое число от 1 до ${npcs.length}`);
+                return;
+            }
+            const name = String(arg[1]);
+            const routeName = this.routeData.routes.findIndex(route => route.name === name);
+            if( routeName === -1 ){
+                chat.send(player, `Не удалось найти route с параметром name = ${name}`);
+                chat.send(player, 'Существующие name:');
+                this.routeData.routes.forEach(routes => {
+                    chat.send(player, routes.name);
+                });
+                return;
+            }
+            alt.emitClient(player, 'patrol:asignCurrentRouteToPed', pedId, this.routeData.routes[routeName].id);
             chat.send(player, `Asigned route to ped`);
         });
 
@@ -115,7 +170,7 @@ class PatrolServer {
 
         chat.registerCmd('load', (player, arg) => { // /path load <name>
             if(arg.length !== 1){
-                chat.send(player, `Некорректное кол ичество аргументов`);
+                chat.send(player, `Некорректное количество аргументов`);
                 return;
             }
             const name = String(arg);
@@ -129,7 +184,8 @@ class PatrolServer {
                 return;
             }
             alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[routeName]);
-            chat.send(player, `Маршрут ${name} загружен`);
+            //alt.log('route:', JSON.stringify(this.routeData.routes[routeName].id));
+            chat.send(player, `/load ${name}`);
             //chat.send(player, `Испрользование load /load name`);
             //    ///path load <name>
         });
@@ -163,7 +219,23 @@ class PatrolServer {
                 //this.checkDistance(player, interactionType);
         });
     
-        chat.registerCmd('clear', (player) => { // /path clear — сохранить маршрут
+        chat.registerCmd('clear', (player, arg) => { // /path clear — сохранить маршрут
+            if(arg.length !== 1){
+                chat.send(player, `Некорректное количество аргументов`);
+                return;
+            }
+            const name = String(arg);
+            const routeName = this.routeData.routes.findIndex(route => route.name === name);
+            if( routeName === -1 ){
+                chat.send(player, `Не удалось найти route с параметром name = ${name}`);
+                chat.send(player, 'Существующие name:');
+                this.routeData.routes.forEach(routes => {
+                    chat.send(player, routes.name);
+                });
+                return;
+            }
+            alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[routeName]);
+            chat.send(player, `Маршрут ${name} удален на клиенте`);
             alt.emitClient(player, 'patrol:clearCurrentRoute');
             chat.send(player, '/clear');
         });
@@ -214,7 +286,7 @@ class PatrolServer {
     //при провале возвращает false, при успехе значение корректного аргумента(parseInt(arg[0]))
         checkArgument(player, arg){
             if(arg.length !== 1){
-                chat.send(player, `Некорректное кол ичество аргументов`);
+                chat.send(player, `Некорректное количество аргументов`);
                 return false;
             }
             const parsedArg = parseInt(arg[0]);
@@ -228,25 +300,32 @@ class PatrolServer {
     
     spawnDefaultNpcs = () =>{
         // Охранник у банка
+        npcs.forEach(npc => {
+            const ped = new alt.Ped( npc.model, new alt.Vector3(npc.position.x, npc.position.y, npc.position.z), new alt.Vector3(npc.rotation.x, npc.rotation.y, npc.rotation.z));
+            ped.dimension = defaultParameters.dimension;
+            ped.invincible = defaultParameters.invincible;
+            //ped.collision = defaultParameters.collision;  //что бы ped не сталкивались друг с другом (и не сбивали друг другу маршруты) если у них маршруты пересекаются 
+        });
         
         //const rotZ = 0.69 * (180 / Math.PI); // преобразование в градусы
+ /*
         const npc = new alt.Ped(
             "s_m_m_chemsec_01", // Модель
             new alt.Vector3(-1266.87, -1443.204, 4.460),   // Позиция (alt.Vector3)
             new alt.Vector3(0, 0, 0.69) // Поворот
         );
-
+*/
         // Устанавливаем измерение
-        npc.dimension = 0;
+       // npc.dimension = 0;
         
         // Делаем NPC инвульнеральным (неуязвимым)
-        npc.invincible = true;
+        //npc.invincible = true;
         //npc.collision = false;      
         //native.setBlockingOfNonTemporaryEvents(npc.scriptID, true);
         // Заморозваем NPC на месте, чтобы он не двигался
         //npc.frozen = true;
-        this.currentPed = npc;
-        
+        //this.currentPed = npc;
+        /*
         alt.log(`npc:setup: {
             id: ${this.currentPed.id},
             model: ${this.currentPed.model},
@@ -257,7 +336,7 @@ class PatrolServer {
             collision: ${this.currentPed.collision},
             pos: ${JSON.stringify(this.currentPed.pos)}
         }`);
-        
+        */
         //alt.log(Object.getOwnPropertyNames(this.currentPed));
 
     }
