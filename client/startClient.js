@@ -37,7 +37,7 @@ class PatrolClient {
         this.mainMap = new Map();
         
         this.visionConeColour = [0, 255, 0, 200];
-        this.redColour = [255, 0, 0, 200];
+      //  coneColor = [255, 0, 0, 200];
         this.greenColour = [0, 255, 0, 200];
 
         this.init();
@@ -382,6 +382,7 @@ connectNodesLine(routeMap, attributes){
     }
 }
 
+    //const coneColor = cansee ? { r: 255, g: 0, b: 0, a: 200 } : { r: 0, g: 255, b: 0, a: 200 };
 //отображение области видимости ped
 drawPedVisionCone(pedPos, pedScriptID, playerpos) {
     const heading = native.getEntityHeading(pedScriptID);
@@ -390,11 +391,27 @@ drawPedVisionCone(pedPos, pedScriptID, playerpos) {
     const halfAngleRad = (this.viewAngle / 2) * Math.PI / 180;
     const stepAngleRad = (this.viewAngle * Math.PI / 180) / this.viewSectors;
 
-    
     const cansee = this.isPlayerInVisionCone(playerpos, headingRad, halfAngleRad, pedPos);
-
     let prevPoint = null;
-if (cansee){
+    let coneColor = { r: 0, g: 255, b: 0, a: 200 };
+    
+    if (cansee){
+        coneColor = { r: 255, g: 0, b: 0, a: 200 };
+        native.drawMarker(
+            0,
+            playerpos.x, playerpos.y, playerpos.z + 1.0,
+            0, 0, 0,
+            0, 0, 0,
+            0.15, 0.15, 0.15,
+            255, 0, 0, 200,
+            true, true, 2, 0, 0, 0, false
+        );
+        native.drawLine(
+            pedPos.x, pedPos.y, pedPos.z + 0.1,
+            playerpos.x, playerpos.y, playerpos.z + 0.5,
+            255, 0, 0, 200
+        );
+    }
     for (let i = -halfAngleRad; i <= halfAngleRad; i += stepAngleRad) {
         const currentAngle = headingRad + i;
 
@@ -408,80 +425,22 @@ if (cansee){
         native.drawLine(
             pedPos.x, pedPos.y, pedPos.z + 0.1,
             x, y, z + 0.1,
-            this.redColour[0], this.redColour[1], this.redColour[2], this.redColour[3]
+            coneColor.r, coneColor.g, coneColor.b, coneColor.a
         );
 
         if (prevPoint) {
             native.drawLine(
                 prevPoint.x, prevPoint.y, prevPoint.z + 0.1,
                 x, y, z + 0.1,
-                this.redColour[0], this.redColour[1], this.redColour[2], this.redColour[3]
+                coneColor.r, coneColor.g, coneColor.b, coneColor.a
             );
         }
 
         prevPoint = { x, y, z };
     }
 }
-else{
-        for (let i = -halfAngleRad; i <= halfAngleRad; i += stepAngleRad) {
-        const currentAngle = headingRad + i;
 
-        const forwardX = Math.sin(-currentAngle);
-        const forwardY = Math.cos(-currentAngle);
-
-        const x = pedPos.x + forwardX * this.viewDistance;
-        const y = pedPos.y + forwardY * this.viewDistance;
-        const z = pedPos.z;
-
-        native.drawLine(
-            pedPos.x, pedPos.y, pedPos.z + 0.1,
-            x, y, z + 0.1,
-            this.greenColour[0], this.greenColour[1], this.greenColour[2], this.greenColour[3]
-        );
-
-        if (prevPoint) {
-            native.drawLine(
-                prevPoint.x, prevPoint.y, prevPoint.z + 0.1,
-                x, y, z + 0.1,
-                this.greenColour[0], this.greenColour[1], this.greenColour[2], this.greenColour[3]
-            );
-        }
-
-        prevPoint = { x, y, z };
-    }
-}
-        if (cansee) {
-            native.drawMarker(
-                0,
-                playerpos.x, playerpos.y, playerpos.z + 1.0,
-                0, 0, 0,
-                0, 0, 0,
-                0.15, 0.15, 0.15,
-                255, 0, 0, 200,
-                true, true, 2, 0, 0, 0, false
-            );
-            if (!this.isPlayerInSight) {
-                this.whichPedhasPlayerinVisionCone = pedScriptID;
-                this.isPlayerInSight = true;
-                alt.log('this.isPlayerInSight = true;');
-            }
-        }
-        else {
-            if (this.isPlayerInSight) {
-                this.whichPedhasPlayerinVisionCone = null;
-                this.isPlayerInSight = false;
-                alt.log('this.isPlayerInSight = false;');
-            }
-        }
-
-    if (this.isPlayerInSight && this.whichPedhasPlayerinVisionCone === pedScriptID) {
-    native.drawLine(
-        pedPos.x, pedPos.y, pedPos.z + 0.1,
-        playerpos.x, playerpos.y, playerpos.z + 0.5,
-        255, 0, 0, 200
-    );
-    }
-}
+//            if (!this.isPlayerInSight && this.whichPedhasPlayerinVisionCone === pedScriptID) {
 
 isPlayerInVisionCone(playerPos, headingRad, halfAngleRad, pedPos) {
 
