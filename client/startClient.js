@@ -20,7 +20,7 @@ class PatrolClient {
     constructor() {
         this.currentPed = new Map();
         this.debug = null;
-        this.singleDebug = null
+        this.singleDebug = new Map();
 
         this.patrolName = "miss_";
 
@@ -28,7 +28,7 @@ class PatrolClient {
         this.viewAngle = 80;         // угол обзора (градусы)
         this.viewSectors = 7;
 
-        this.isPlayerInSight = false;
+    //    this.isPlayerInSight = false;
         this.whichPedhasPlayerinVisionCone = null;
 
         this.defaultConfig = defaultClientConfig;
@@ -36,9 +36,9 @@ class PatrolClient {
         this.routePointsMap = new Map();
         this.mainMap = new Map();
         
-        this.visionConeColour = [0, 255, 0, 200];
-      //  coneColor = [255, 0, 0, 200];
-        this.greenColour = [0, 255, 0, 200];
+    //    this.visionConeColour = [0, 255, 0, 200];
+        
+    //    this.greenColour = [0, 255, 0, 200];
 
         this.init();
     }
@@ -106,7 +106,8 @@ class PatrolClient {
             //при первом появлении ped на клиенте 
             this.currentPed.set(entity.id, {
                 entity,
-                asignedRoute: null
+                asignedRoute: null,
+                isdebuged: false
             });
             const data = this.currentPed.get(entity.id);
             alt.log(`entity id: ${data.entity.id}, entity scriptID: ${data.entity.scriptID}, asignedRoute: ${data.asignedRoute}`);
@@ -125,11 +126,16 @@ class PatrolClient {
             alt.log(`ped ${arg} Stop`);
             const ped = this.currentPed.get(arg);
 
-            if (ped.asignedRoute !== null ){
+            if (ped.asignedRoute !== null ){    
                 const data = this.mainMap.get(ped.asignedRoute);
                 native.deletePatrolRoute(`miss_${data.attributes.name}`);
                 ped.asignedRoute = null;
                 alt.log(`Удален маршрут ${data.attributes.name} для ped ${arg}`);
+                if (data.attributes.isdebuged === true){
+                    data.attributes.isdebuged = false;
+                
+                    alt.log('route.isdebuged = false, будет повторяться в общем debug');
+                }
             }
             else{
                 drawNotification(`Ped ${arg} не назначен никакой маршрут`);
@@ -138,16 +144,19 @@ class PatrolClient {
 
         alt.onServer('patrol:pedDebug', (arg) => {
             alt.log(`ped ${arg} Debug`);
-            const ped = this.currentPed.get(arg);
-            const data = this.mainMap.get(ped.asignedRoute);
-            data.attributes.isdebuged = true;
+
+           // this.mainMap.get(this.currentPed.get(arg).asignedRoute).attributes.isdebuged = true;
             //this.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt.Player.local.pos);
-            this.singleDebug = alt.everyTick(() => {
-                
-                this.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt.Player.local.pos);
-                this.drawRouteMarkers(data.nodes);
-                this.connectNodesLine(data.nodes, data.attributes);
-            });
+            const ped = this.currentPed.get(arg);
+            if (ped.isdebuged === false){
+               this.pedDebugTurnOn(ped);
+            }
+            else{
+                this.pedDebugTurnOff(ped);
+            }
+            
+
+         //   this.mainMap.get(this.currentPed.get(arg).asignedRoute).attributes.isdebuged = true;
         });
 
         //отображать debug, после команды с сервера
@@ -180,9 +189,14 @@ class PatrolClient {
 
             this.asignCurrentRouteToPed(ped.entity, data.attributes, data.nodes);
             data.attributes.asigned = ped.entity.id;
+            ped.asignedRoute = routeID;
             //this.currentPed.set(arg, {asignedRoute: routeID});
 
-            ped.asignedRoute = routeID;
+            if (ped.isdebuged === true){
+                data.attributes.isdebuged = true;
+                
+                alt.log('route.isdebuged = true, не будет повторяться в общем debug');
+            }
 /*
             this.currentPed.forEach(({ entity, asignedRoute }, id) => {
                 alt.log(`Ped ID: ${id}, asignedRoute: ${asignedRoute}, entity:`);
@@ -223,6 +237,45 @@ class PatrolClient {
             //this.routePointsMap = new Map();
             this.routePointsMap.clear();
         });
+    }
+
+    pedDebugTurnOn(ped){
+        if( ped.asignedRoute !== null ){
+            this.mainMap.get(ped.asignedRoute).attributes.isdebuged = true;
+            alt.log('route.isdebuged = true, не будет повторяться в общем debug');
+        }
+        ped.isdebuged = true;
+        //            const ped = this.currentPed.get(arg);
+        //this.singleDebug
+        const timerID = alt.everyTick(() => {
+
+            this.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt.Player.local.pos);
+
+            if(ped.asignedRoute !== null){
+                const data = this.mainMap.get(ped.asignedRoute);
+                this.connectNodesLine(data.nodes, data.attributes);
+                this.drawRouteMarkers(data.nodes);
+            }
+        });
+        this.singleDebug.set(ped.entity.id, timerID);
+        alt.log('this.singleDebug', this.singleDebug);
+
+    }
+
+    pedDebugTurnOff(ped){
+            const timerId = this.singleDebug.get(ped.entity.id);
+            alt.clearEveryTick(timerId);
+            this.singleDebug.delete(ped.entity.id)
+            alt.log('this.singleDebug', this.singleDebug);
+//            this.singleDebug = null;
+            ped.isdebuged = false;
+            if( ped.asignedRoute !== null ){
+                this.mainMap.get(ped.asignedRoute).attributes.isdebuged = false;
+                alt.log('route.isdebuged = false, не будет повторяться в общем debug');
+            }
+            //this.mainMap.get(ped.asignedRoute).attributes.isdebuged = false;
+            //alt.log('route.isdebuged = true, не будет повторяться в общем debug');
+            alt.log(`pedDebugTurnOff`);
     }
 
     initializeMap(route){
@@ -394,7 +447,7 @@ drawPedVisionCone(pedPos, pedScriptID, playerpos) {
     const cansee = this.isPlayerInVisionCone(playerpos, headingRad, halfAngleRad, pedPos);
     let prevPoint = null;
     let coneColor = { r: 0, g: 255, b: 0, a: 200 };
-    
+
     if (cansee){
         coneColor = { r: 255, g: 0, b: 0, a: 200 };
         native.drawMarker(
