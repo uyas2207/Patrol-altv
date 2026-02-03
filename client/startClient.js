@@ -22,6 +22,8 @@ class PatrolClient {
         this.debug = null;
         this.singleDebug = new Map();
 
+        this.currentRouteAttributes = null; //в буддущем массив в котором будут доп знаечния для текщуего массива (looped, asigned, isdebuged ...)
+
         this.patrolName = "miss_";
 
         this.viewDistance = 4;     // длина конуса
@@ -33,7 +35,7 @@ class PatrolClient {
 
         this.defaultConfig = defaultClientConfig;
 
-        this.routePointsMap = new Map();
+        this.routePointsMap = new Map();        //текущий маршрут
         this.mainMap = new Map();
         
     //    this.visionConeColour = [0, 255, 0, 200];
@@ -83,7 +85,6 @@ class PatrolClient {
                 alt.log('value:', (value));
             });
         });
-
 
 
         alt.on('gameEntityCreate', async (entity) => {
@@ -162,9 +163,9 @@ class PatrolClient {
         //отображать debug, после команды с сервера
         alt.onServer('patrol:debugTurnOn', () => {
             //if (!this.currentPed || !this.currentPed.valid) return;
+            
             this.debug = alt.everyTick(() => {
-                
-              //  this.drawPedVisionCone();
+                this.drawAllPedVisionCones();
                 this.drawAllMarkers();
                 this.connectAllRoutesLine();
             });
@@ -179,10 +180,55 @@ class PatrolClient {
             alt.log(`debugTurnOff`);
         });
 
+        alt.onServer('patrol:switchCurrentRoute', (routeID) => {
+            alt.log('routeID:', routeID);
+            /*
+            alt.log('Весь mainMap');
+            this.mainMap.forEach((value, key) => {
+                alt.log(`Ключ: ${(key)}`);
+                alt.log('value:', (value));
+            });
+            */
+            if (this.mainMap.has(routeID) === false) {
+                drawNotification(`Route не загружен на клиент`);
+                drawNotification(`Что бы загрузить Route используйте команду /load`);
+                return;
+            }
+            const data = this.mainMap.get(routeID);
+            //this.initializeMap(data);
+        this.currentRouteAttributes = { //запоминает доп параметры маршрута
+            id: data.attributes.id,
+            name: data.attributes.name,
+            looped: data.attributes.looped,
+            asigned: data.attributes.asigned,
+            isdebuged: data.attributes.isdebuged
+        };
+    
+        alt.log('currentRouteAttributes После switch:', JSON.stringify(this.currentRouteAttributes));
+
+        this.routePointsMap = new Map();
+
+        data.nodes.forEach(node => {
+            this.routePointsMap.set( node.index, node);
+        });
+        // из за того кто был сорздан new Map(), нужно заново делать this.mainMap.set что бы все последущие изменения в this.routePointsMap корректно отображались в this.mainMap
+        this.mainMap.set(routeID, {
+            attributes: this.currentRouteAttributes,
+            nodes: this.routePointsMap
+        });
+            alt.log('routePointsMap После switch:', JSON.stringify(this.routePointsMap));
+            alt.log('Сменилась текщуий route на route =', data.attributes.name);
+        });
+
         alt.onServer('patrol:asignCurrentRouteToPed', (arg, routeID) => {
             alt.log('arg', arg);
             const ped = this.currentPed.get(arg);
             alt.log('ped.entity.scriptID',JSON.stringify(ped.entity.scriptID));
+            if (this.mainMap.has(routeID) === false) {
+                drawNotification(`Route ${arg} не загружен на клиент`);
+                drawNotification(`Что бы загрузить Route ${routeID} используйте команду /load ${routeID}`);
+                return;
+            }
             const data = this.mainMap.get(routeID);
             alt.log('data.attributes:', JSON.stringify(data.attributes));
             alt.log('data.nodes:', JSON.stringify(data.nodes));
@@ -233,8 +279,20 @@ class PatrolClient {
         });
 
         alt.onServer('patrol:clearCurrentRoute', () => {
+            if (this.currentRouteAttributes === null){ // && this.routePointsMap.size === 0
+                drawNotification(`Текщуий route пустой`);
+                drawNotification(`Нельзя очистить ПУСТОЙ route`);
+                return;
+            }
+            const tempID = this.currentRouteAttributes.id;
+            const data = this.mainMap.get(tempID);
+            if(data.attributes.asigned !== null){
+                native.deletePatrolRoute(`miss_${data.attributes.name}`);
+            }
+            alt.log('tempID', tempID);
+            this.mainMap.delete(tempID);
+            
             this.currentRouteAttributes = null;
-            //this.routePointsMap = new Map();
             this.routePointsMap.clear();
         });
     }
@@ -367,6 +425,21 @@ drawAllMarkers() {
         this.drawRouteMarkers(nodes);
         }
     });
+}
+
+drawAllPedVisionCones(){
+    this.currentPed.forEach((value) => {
+        if( value.isdebuged === false ){
+            this.drawPedVisionCone(value.entity.pos, value.entity.scriptID, alt.Player.local.pos)
+        }
+    });
+/*
+    this.mainMap.forEach(({ nodes, attributes }) => {
+        if( attributes.isdebuged === false ){
+        this.drawRouteMarkers(nodes);
+        }
+    });
+    */
 }
 
 drawPedMarkers(){
@@ -541,7 +614,7 @@ async asignCurrentRouteToPed(ped, attributes, nodes) {
     }
     native.deletePatrolRoute(`miss_${attributes.name}`);
 
-        //cоздаем маршрут
+        //cоздает маршрут
     native.openPatrolRoute(`miss_${attributes.name}`);
 
         nodes.forEach((current) => {

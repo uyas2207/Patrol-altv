@@ -12,7 +12,7 @@ import { npcs } from './config/serverconfig.js';
 class PatrolServer {
     constructor() {
         alt.log('defaultParameters:',defaultParameters);
-        alt.log('npcs',npcs.length);
+        alt.log('npcs', npcs.length);
         this.currentPed = null;
         this.routePointsMap = new Map();
         
@@ -77,7 +77,26 @@ class PatrolServer {
         chat.registerCmd('pedmap', (player) => {    //выводит все значения pedmap
             alt.emitClient(player, 'patrol:pedMap');
         });
-        
+
+        chat.registerCmd('switch', (player, arg) => {    //меняет текущий маршрут (тот к которому добавляют и удаляют ноды командами) для взаимодействия на клиенте
+            if(arg.length !== 1){
+                chat.send(player, `Некорректное количество аргументов`);
+                return;
+            }
+            const name = String(arg[0]);
+            const routeName = this.routeData.routes.findIndex(route => route.name === name);
+            if( routeName === -1 ){
+                chat.send(player, `Не удалось найти route с параметром name = ${name}`);
+                chat.send(player, 'Существующие name:');
+                this.routeData.routes.forEach(routes => {
+                    chat.send(player, routes.name);
+                });
+                return;
+            }
+            alt.emitClient(player, 'patrol:switchCurrentRoute', this.routeData.routes[routeName].id);
+            chat.send(player, `Switched current route to ${name}`);
+        });
+        //patrol:switchCurrentRoute
         chat.registerCmd('peddebug', (player, arg) => {    
             if(arg.length !== 1){
                 chat.send(player, `Некорректное количество аргументов`);
@@ -219,7 +238,9 @@ class PatrolServer {
                 //this.checkDistance(player, interactionType);
         });
     
-        chat.registerCmd('clear', (player, arg) => { // /path clear — сохранить маршрут
+        chat.registerCmd('clear', (player) => { // /path clear — сохранить маршрут
+            
+            /*
             if(arg.length !== 1){
                 chat.send(player, `Некорректное количество аргументов`);
                 return;
@@ -234,10 +255,11 @@ class PatrolServer {
                 });
                 return;
             }
-            alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[routeName]);
-            chat.send(player, `Маршрут ${name} удален на клиенте`);
+            */
+//            alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[routeName]);
             alt.emitClient(player, 'patrol:clearCurrentRoute');
-            chat.send(player, '/clear');
+        //    chat.send(player, '/clear');
+            chat.send(player, `Иекущий маршрут удален на клиенте`);
         });
 
         chat.registerCmd('create', (player, arg) => { // /create <name>
