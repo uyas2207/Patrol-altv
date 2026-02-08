@@ -619,16 +619,16 @@ async asignCurrentRouteToPed(ped, attributes, nodes) {
 
         nodes.forEach((current) => {
             native.addPatrolRouteNode(
-                    current.index,
-                    this.defaultConfig.animation,
-                    current.position.x,
-                    current.position.y,
-                    current.position.z,
-                    current.rotation.x,
-                    current.rotation.y,
-                    current.rotation.z,
-                    current.waitTime
-                );
+                current.index,
+                this.defaultConfig.animation,
+                current.position.x,
+                current.position.y,
+                current.position.z,
+                current.rotation.x,
+                current.rotation.y,
+                current.rotation.z,
+                current.waitTime
+            );
         });
 
 
@@ -655,4 +655,8 @@ async asignCurrentRouteToPed(ped, attributes, nodes) {
 
 }
 
+
+
 new PatrolClient();
+
+
