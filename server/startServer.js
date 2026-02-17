@@ -13,42 +13,36 @@ class PatrolServer {
     constructor() {
         alt.log('defaultParameters:',defaultParameters);
         alt.log('npcs', npcs.length);
-        this.currentPed = null;
-        this.routePointsMap = new Map();
-        
-        this.currentPatrolIndex = 0;
-        this.isPatrolling = false;
 
-        this.debug = false;
+        this.debug = false; //изначальное состояния debug при включении сервера
 
-        this.configData = fs.readFileSync('./resources/patrol/shared/routePoints.json', 'utf8');
-        this.routeData = JSON.parse(this.configData);
+        //this.configData = fs.readFileSync('./resources/patrol/shared/routePoints.json', 'utf8');    //существующие маршруты патруля
+        this.routeData = JSON.parse(fs.readFileSync('./resources/patrol/shared/routePoints.json', 'utf8')); //существующие маршруты патруля
 
-        this.commands = {
+        this.commands = {   //весь список команд
             path: {
-                info: this.routeInfoCommande.bind(this),
-                switch: this.switchCommande.bind(this),
+                info: this.routeInfoCommand.bind(this),    //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.routePointsMap + currentRouteAttributes
+                switch: this.switchCommand.bind(this),     //меняет текщуий маршрут на клиенте (для коректной работы addnode dellnode т.к добавление и удаление нод происходит с текущим маршрутом)
 
-                debug: this.debugCommande.bind(this),
-                addnode: this.addnodeCommande.bind(this),
-                dellnode: this.dellnodeCommande.bind(this),
-                clear: this.clearCommande.bind(this),
-                save: this.saveCommande.bind(this),
-                load: this.loadCommande.bind(this),
-                create: this.createCommande.bind(this)
+                debug: this.debugCommand.bind(this),       //отображает общий debug, все переданные на клиент маршруты и все области видимости ped
+                addnode: this.addnodeCommand.bind(this),   //добавляет в текущий маршрут точку на которой стоит игрок
+                dellnode: this.dellnodeCommand.bind(this), //удаляет из текщуего маршрута точку с указаным в команде номером
+                clear: this.clearCommand.bind(this),       //очищает текущий маршрут на клиенте
+                save: this.saveCommand.bind(this),         //запрашивает с клиента его текущий маршрут для сохранения в общий список в routePoints.json
+                load: this.loadCommand.bind(this),         //передает на клиент маршрут с названием указанным в команде из routePoints.json
+                create: this.createCommand.bind(this)      //создает новый маршрут в файле routePoints.json и передает его на клиент
             },
             ped: {
-                info: this.pedinfoCommande.bind(this),
-                map: this.pedmapCommande.bind(this),
+                info: this.pedinfoCommand.bind(this),      //выводит всю информацию о ped на клиенте (scriptID, netOwner, dimension, remoteID ...)
+                map: this.pedmapCommand.bind(this),        //выводит всю информацию о ped из клиентской map mainPedMap (asignedRoute, isdebuged)
 
-                asign: this.asignCommande.bind(this),
-                peddebug: this.peddebugCommande.bind(this),
-                stop: this.stopCommande.bind(this)
+                asign: this.asignCommand.bind(this),       //начзначет ped маршрут
+                debug: this.peddebugCommand.bind(this),    //отображает debug для конкретного ped, его облапсть видимости и маршрут который ему назначен если такой есть
+                stop: this.stopCommand.bind(this)          //отменяет ped маршрут для патруля у ped
             }
         }
 
         this.init();
-
     }
 
     init(){
@@ -56,18 +50,15 @@ class PatrolServer {
             player.spawn(-1269.91, -1438.64, 4.46);
             player.rot = new alt.Vector3(0, 0, -2.5);
             await new Promise(resolve => alt.setTimeout(resolve, 500));
+            
             //Проверка на случай если игрок заходит на сервер когда на сервере включен debug
             if (this.debug) alt.emitClient(player, 'patrol:debugTurnOn');
 
-            await new Promise(resolve => alt.setTimeout(resolve, 500));
+            //await new Promise(resolve => alt.setTimeout(resolve, 500));
         });
 
         alt.on('resourceStart', () => {
             this.spawnDefaultNpcs();
-            
-            alt.setTimeout(() => {
-
-            }, 1000);
         });
 
         chat.registerCmd('path', (player, args) => {
@@ -77,56 +68,6 @@ class PatrolServer {
         chat.registerCmd('ped', (player, args) => {
             this.executeCommand('ped', player, args);
         });
-
-/*
-
-        chat.registerCmd('switch', (player, arg) => {    //меняет текущий маршрут (тот к которому добавляют и удаляют ноды командами) для взаимодействия на клиенте
-            this.switchCommande(player, arg);
-        });
-
-        //patrol:switchCurrentRoute
-        
-        chat.registerCmd('peddebug', (player, arg) => {    
-            this.peddebugCommande(player, arg);
-        });
-
-        chat.registerCmd('stop', (player, arg) => { // /ped stop <pedId>
-            this.stopCommande(player, arg);
-        });
-        
-        chat.registerCmd('debug', (player) => {
-            this.debugCommande(player);
-        });
-
-        chat.registerCmd('asign', (player, arg) => { //ped assign <pedId> <pathName>
-            this.asignCommande(player, arg);
-        });
-
-        chat.registerCmd('addnode', (player, arg) => {   //path addnode
-            this.addnodeCommande(player, arg);
-        });
-
-        chat.registerCmd('dellnode', (player, arg) => { // /path removenode <index>
-            this.dellnodeCommande(player, arg);
-        });
-
-        chat.registerCmd('load', (player, arg) => { // /path load <name>
-            this.loadCommande(player, arg);
-        });
-
-        chat.registerCmd('save', (player) => { /// path save — сохранить маршрут
-            this.saveCommande(player);
-        });
-    
-        chat.registerCmd('clear', (player) => { // /path clear — сохранить маршрут
-            this.clearCommande(player);
-        });
-
-        chat.registerCmd('create', (player, arg) => { // /create <name>
-            this.createCommande(player, arg);
-        });
-
-*/
 
         alt.onClient('patrol:sendRouteMap', (player, clientRoute) => {
             this.sendRouteMap(player, clientRoute);
@@ -163,22 +104,11 @@ class PatrolServer {
         //alt.log('doesRouteExist:', doesRouteExist);
         this.routeData.routes[routeIndex] = clientRoute;
 
-        /*
-            this.routeData.routes.forEach(route => {
-                route.nodes.forEach(node => {
-                    alt.log(node);
-                });
-            });
-        
-        */          //name
-
         fs.writeFileSync( './resources/patrol/shared/routePoints.json',  JSON.stringify(this.routeData, null, 1), 'utf-8' );
         chat.send(player, 'Маршрут успешно сохранён');
-        
-            //this.checkDistance(player, interactionType);    
     }
 
-    createCommande(player, arg){
+    createCommand(player, arg){
         if(arg.length !== 1){
             chat.send(player, `Некорректное количество аргументов`);
             return;
@@ -189,6 +119,7 @@ class PatrolServer {
         
         if( routeName !== -1 ){
             chat.send(player, `Route с названием ${name} уже существует`);
+            return;
         }
         else {
             
@@ -206,11 +137,6 @@ class PatrolServer {
             };
             //alt.log('newRoute=',newRoute);
             this.routeData.routes.push(newRoute); 
-            // this.routeData.routes.forEach(route => {
-                // route.nodes.forEach(node => {
-            //         alt.log(route);
-                // });
-        //    });
 
             fs.writeFileSync( './resources/patrol/shared/routePoints.json',  JSON.stringify(this.routeData, null, 1), 'utf-8' );
             alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[lastIndex+1]);
@@ -218,20 +144,20 @@ class PatrolServer {
         }
     }
 
-    clearCommande(player){
+    clearCommand(player){
     //            alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[routeName]);
         alt.emitClient(player, 'patrol:clearCurrentRoute');
     //    chat.send(player, '/clear');
-        chat.send(player, `Иекущий маршрут удален на клиенте`);
+        chat.send(player, `Текущий маршрут удален на клиенте`);
     }
 
-    saveCommande(player){
+    saveCommand(player){
         alt.emitClient(player, 'patrol:askForRouteMap');
         alt.log('save');
         //chat.send(player, `Asigned route to ped`);
     }
 
-    loadCommande(player, arg){
+    loadCommand(player, arg){
         if(arg.length !== 1){
             chat.send(player, `Некорректное количество аргументов`);
             return;
@@ -253,7 +179,7 @@ class PatrolServer {
         //    ///path load <name>
     }
 
-    dellnodeCommande(player, arg){
+    dellnodeCommand(player, arg){
         const result = (this.checkArgument(player, arg));
         if (result === false){
             chat.send(player, `Испрользование dellnode /dellnode node_id`);
@@ -263,24 +189,30 @@ class PatrolServer {
         chat.send(player, `/dellNode ${result}`);
     }
 
-    addnodeCommande(player, arg){
-        const result = (this.checkArgument(player, arg));
+    addnodeCommand(player, node_id){
+        const result = (this.checkArgument(player, node_id));
         if (result === false){ 
             chat.send(player, `Испрользование addnode /addnode node_id`);
             return
         }
-        //alt.log('player.pos', player.pos);
+        //координаты ноды
         const roundedPos = {
             x: parseFloat(player.pos.x.toFixed(2)),
             y: parseFloat(player.pos.y.toFixed(2)),
             z: parseFloat(player.pos.z.toFixed(2))
         };
-        //alt.log('roundedPos', roundedPos);
-        alt.emitClient(player, 'patrol:addNode', roundedPos, result);
+        //точка в 5 метрах по взгляду игрока (координаты на которые будет смотреть ped)
+        const lookingPoint = {
+            x: parseFloat((roundedPos.x - Math.sin(player.rot.z) * 5).toFixed(2)),
+            y: parseFloat((roundedPos.y + Math.cos(player.rot.z) * 5).toFixed(2)),
+            z: roundedPos.z
+        }
+        
+        alt.emitClient(player, 'patrol:addNode', roundedPos, lookingPoint, result);
         chat.send(player, `/addnode ${result}`);
     }
-
-    asignCommande(player, arg){
+    //начзначет ped маршрут
+    asignCommand(player, arg){
         if(arg.length !== 2){
             chat.send(player, `Некорректное количество аргументов`);
             return;
@@ -304,20 +236,20 @@ class PatrolServer {
         chat.send(player, `Asigned route to ped`);
     }
 
-    debugCommande(player){
+    debugCommand(player){
         if(!this.debug){
-            this.debug = true;
             alt.emitClient(player, 'patrol:debugTurnOn');
+            this.debug = true;
             chat.send(player, `Debug on`);
         }
         else{
-            this.debug = false;
             alt.emitClient(player, 'patrol:debugTurnOff');
+            this.debug = false;
             chat.send(player, `Debug off`);
         }
     }
-
-    stopCommande(player, arg){
+    //отменяет ped маршрут для патруля у ped
+    stopCommand(player, arg){
         if(arg.length !== 1){
             chat.send(player, `Некорректное количество аргументов`);
             return;
@@ -329,7 +261,7 @@ class PatrolServer {
         alt.emitClient(player, 'patrol:pedStop', pedId);
     }
 
-    switchCommande(player, arg){
+    switchCommand(player, arg){
         if(arg.length !== 1){
             chat.send(player, `Некорректное количество аргументов`);
             return;
@@ -347,8 +279,8 @@ class PatrolServer {
         alt.emitClient(player, 'patrol:switchCurrentRoute', this.routeData.routes[routeName].id);
         chat.send(player, `Switched current route to ${name}`);
     }
-
-    peddebugCommande(player, arg){
+    //отображает debug для конкретного ped, его облапсть видимости и маршрут который ему назначен если такой есть
+    peddebugCommand(player, arg){
         if(arg.length !== 1){
             chat.send(player, `Некорректное количество аргументов`);
             return;
@@ -356,27 +288,36 @@ class PatrolServer {
         const pedId = parseInt(arg[0]);
         if (isNaN(pedId) || arg[0].length !== 1 || pedId < 1 || pedId > npcs.length){
             chat.send(player, `Аругментом может быть только целое число от 1 до ${npcs.length}`);
+            return;
         }
         alt.emitClient(player, 'patrol:pedDebug', pedId);
     }
-
-    pedinfoCommande(player, arg){
+    //выводит всю информацию о ped на клиенте (scriptID, netOwner, dimension, remoteID ...)
+    pedinfoCommand(player, arg){
+        if(arg.length !== 1){
+            chat.send(player, `Некорректное количество аргументов`);
+            return;
+        }
+        const pedId = parseInt(arg[0]);
+        if (isNaN(pedId) || arg[0].length !== 1 || pedId < 1 || pedId > npcs.length){
+            chat.send(player, `Аругментом может быть только целое число от 1 до ${npcs.length}`);
+            return;
+        }
         alt.log('arg = ', arg);
         const number = parseInt(arg);
         alt.emitClient(player, 'patrol:pedinfo', number);
         alt.log('pedinfo');
         alt.log('number=', number);
     }
-
-    pedmapCommande(player){
+    //выводит всю информацию о ped из клиентской map mainPedMap (asignedRoute, isdebuged)
+    pedmapCommand(player){
         alt.emitClient(player, 'patrol:pedMap');
     }
-
-    routeInfoCommande(player){//выводит все значения mainmap
+    //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.routePointsMap + currentRouteAttributes
+    routeInfoCommand(player){
      //   alt.log('arg = ', arg);
         alt.emitClient(player, 'patrol:route');
     }
-    
 
     //универсальная проверка аргумента в командах, аругмент может быть только целым числом от 0 до 9
     //при провале возвращает false, при успехе значение корректного аргумента(parseInt(arg[0]))
@@ -395,7 +336,6 @@ class PatrolServer {
     }
     
     spawnDefaultNpcs = () =>{
-        // Охранник у банка
         npcs.forEach(npc => {
             const ped = new alt.Ped( npc.model, new alt.Vector3(npc.position.x, npc.position.y, npc.position.z), new alt.Vector3(npc.rotation.x, npc.rotation.y, npc.rotation.z));
             ped.dimension = defaultParameters.dimension;
@@ -409,4 +349,3 @@ class PatrolServer {
 }
 
 new PatrolServer();
-
