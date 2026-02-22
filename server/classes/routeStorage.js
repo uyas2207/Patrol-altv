@@ -1,0 +1,84 @@
+// alt:V built-in module that provides server-side API.
+import * as alt from 'alt-server';
+// Your chat resource module.
+import * as chat from 'alt:chat';
+
+//для работы с файлами
+import * as fs from 'fs';
+
+export class RouteStorage {
+    constructor(filePath) {
+        this.filePath = filePath;
+        this.routeData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    }
+
+    load(player, name) {
+
+        const routeName = this.routeData.routes.findIndex(route => route.name === name);
+        if( routeName === -1 ){
+            chat.send(player, `Не удалось найти route с параметром name = ${name}`);
+            chat.send(player, 'Существующие name:');
+            this.routeData.routes.forEach(routes => {
+                chat.send(player, routes.name);
+            });
+            return;
+        }
+
+        alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[routeName]);
+        alt.log('route:', JSON.stringify(this.routeData.routes[routeName].id));
+        chat.send(player, `/load ${name}`);
+    }
+
+    save(player, clientRoute) {
+        alt.log(JSON.stringify(clientRoute));
+
+        const routeIndex = this.routeData.routes.findIndex(route => route.name === clientRoute.name);
+
+        this.routeData.routes[routeIndex] = clientRoute;
+
+        fs.writeFileSync( this.filePath, JSON.stringify(this.routeData, null, 1), 'utf-8' );
+        chat.send(player, 'Маршрут успешно сохранён');
+    }
+
+    create(player, name) {
+
+        const routeName = this.routeData.routes.findIndex(route => route.name === name);
+        
+        if( routeName !== -1 ){
+            chat.send(player, `Route с названием ${name} уже существует`);
+            return;
+        }
+        else {
+            
+            //   alt.log('this.routeData.routes.length =', this.routeData.routes.length);
+            const lastIndex = this.routeData.routes.length-1;
+            //  alt.log('lastIndex=',lastIndex);
+            const lastId = this.routeData.routes[lastIndex].id;
+            // alt.log('lastId=',lastId);
+                
+            const newRoute = {
+                    id: lastId+1,
+                    name: name,
+                    looped: false,
+                    nodes: []
+            };
+            //alt.log('newRoute=',newRoute);
+            this.routeData.routes.push(newRoute); 
+
+            fs.writeFileSync( this.filePath,  JSON.stringify(this.routeData, null, 1), 'utf-8' );
+            alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[lastIndex+1]);
+            chat.send(player, `Создан и передан новый route ${name}`);
+        }
+    }
+
+    getRouteByName(name) {
+        return this.routeData.routes.find(route => route.name === name);
+    }
+
+    printRoutesToPlayer(player){
+        chat.send(player, 'Существующие name:');
+        this.routeData.routes.forEach(route => {
+            chat.send(player, route.name);
+        });
+    }
+}
