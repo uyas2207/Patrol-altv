@@ -4,6 +4,11 @@ import * as native from 'natives';
 
 import { defaultClientConfig } from './config/clientConfig.js';
 
+import { RouteManager } from './classes/routeManager.js';
+import { PedManager } from './classes/pedManager.js';
+import { DebugManager } from './classes/debugManager.js';
+import { DebugVisuals } from './classes/debugVisuals.js';
+
 function drawNotification(message, autoHide = false) {
     native.beginTextCommandThefeedPost('STRING');
     native.addTextComponentSubstringPlayerName(`~r~${message}`);
@@ -29,86 +34,102 @@ class PatrolClient {
         this.currentRouteMap = new Map();        //текущий маршрут
         this.mainMap = new Map();               //все маршруты на клиенте
 
-        this.DebugVisuals = new DebugVisuals(); //класс для визуального отображения debug
+        this.debugVisuals = new DebugVisuals(); //класс для визуального отображения debug
 
+
+        this.routeManager = new RouteManager(this.pedManager);
+        this.pedManager = new PedManager(this.routeManager, this.debugVisuals);
+        this.debugManager = new DebugManager(this.pedManager, this.routeManager, this.debugVisuals);
+    
         this.init();
     }
 
     init(){
         //выводит всю информацию о ped
         alt.onServer('patrol:pedinfo', (arg) => {
-            this.pedInfoCommand(arg);
+            this.pedManager.pedInfoCommand(arg);
+            //this.pedInfoCommand(arg);
         });
         //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.currentRouteMap + currentRouteAttributes
         alt.onServer('patrol:route', () => {
-            this.routeCommand();
+            this.routeManager.printAllRoutesInfo();
+            //this.routeCommand();
         });
         //выводит всю информацию о ped из map mainPedMap (asignedRoute, isdebuged)
         alt.onServer('patrol:pedMap', () => {
-            this.pedMapCommand();
+            this.pedManager.pedMapCommand();
+            //this.pedMapCommand();
         });
         //при появлении ped в стрим зоне игрока (если не ped return)
         alt.on('gameEntityCreate', (entity) => {
             alt.log('gameEntityCreate, entity:', entity);
             if(!(entity instanceof alt.Ped)) return;
 
-            this.entityInitialize(entity);
+            this.pedManager.entityInitialize(entity);
         });
 
         //получает route с сервера и добавляет его в mainMap, если такой route еще не добавлен
         alt.onServer('patrol:initRoutes', (route) => {
-            this.initRoutes(route);
+            this.routeManager.initRoutes(route);
+            //this.initRoutes(route);
         });
         //отсанавливает ped (deletePatrolRoute) если ему назначен маршрут + отключает ped debug у маршрута и изменяет данные в pedmap (asignedRoute, isdebuged)
         alt.onServer('patrol:pedStop', (arg) => {
             alt.log(`ped ${arg} Stop`);
-            this.pedStop(arg);
+            this.pedManager.pedStop(arg);
+            //this.pedStop(arg);
         });
         //включает debug для конкретного ped (его область видимости и его маршрут если у него есть asignedRoute)
         alt.onServer('patrol:pedDebug', (arg) => {
             alt.log(`ped ${arg} Debug`);
-            this.pedDebug(arg);
+            this.pedManager.pedDebug(arg);
         });
 
         //отображать debug, после команды с сервера
         alt.onServer('patrol:debugTurnOn', () => {
             //if (!this.mainPedMap || !this.mainPedMap.valid) return;
-            this.debugTurnOn();
+            this.debugManager.turnOnGlobalDebug();
         });
         
         //выключать debug, после команды с сервера
         alt.onServer('patrol:debugTurnOff', () => {
+            this.debugManager.turnOffGlobalDebug();
+            /*
             alt.clearEveryTick(this.debug);
             this.debug = null;
             alt.log(`debugTurnOff`);
+            */
         });
         //сменить текущий route (route к которому добавляются и удаляются nodes)
         alt.onServer('patrol:switchCurrentRoute', (routeID) => {
             alt.log('routeID:', routeID);
-            this.switchCurrentRoute(routeID);
+            this.routeManager.switchCurrentRoute(routeID);
+            //this.switchCurrentRoute(routeID);
         });
         //назначить ped текущий маршрут 
         alt.onServer('patrol:asignCurrentRouteToPed', (arg, routeID) => {
             alt.log('arg', arg);
-            this.checkBeforeAsign(arg, routeID)
+            this.pedManager.asignRouteToPed(arg, routeID);
+            //this.checkBeforeAsign(arg, routeID);
         });
         //добавить ноду к текущему маршруту
         alt.onServer('patrol:addNode', (coords, lookingCoords, arg) => {
-            this.addNodeTocurrentRouteMap(coords, lookingCoords, arg);
+            this.routeManager.addNodeTocurrentRouteMap(coords, lookingCoords, arg);
             alt.log(`addnode`);
         });
         //удалить ноду из текущего маршрута
         alt.onServer('patrol:dellNode', (arg) => {
-            this.dellNodeFromMap(arg);
+            this.routeManager.dellNodeFromMap(arg);
             alt.log(`dellNode`);
         });
         //отправляет на сервер текущий маршрут для сохранения его в общий список маршрутов в routePoints.json
         alt.onServer('patrol:askForRouteMap', () => {
-            this.sendRouteMap();
+            this.routeManager.sendRouteMap();
         });
         //очищает текущий маршрут и удаляет его из mainMap
         alt.onServer('patrol:clearCurrentRoute', () => {
-            this.clearCurrentRoute();
+            this.routeManager.clearCurrentRoute();
+            //this.clearCurrentRoute();
         });
     }
     //очищает текущий маршрут и удаляет его из mainMap + останавливает ped которому был назначен этот маршрут
@@ -188,12 +209,12 @@ class PatrolClient {
     //отправляет на сервер текущий маршрут для сохранения его в общий список маршрутов в routePoints.json
     sendRouteMap(){           
         if ( this.currentRouteMap.size === 0 ) {
-            alt.log('Попытка созранить пустой route');
+            alt.log('Попытка сохранить пустой route');
             drawNotification(`Нельзя сохранять ПУСТОЙ route`);
             return;
         }
         alt.log('askForRouteMap + sendRouteMap');
-        //сохраняте в массив все данные о маршруте которые нужно будет отправить на сервер для сохранения в таком же виде
+        //сохраняет в массив все данные о маршруте которые нужно будет отправить на сервер для сохранения в таком же виде
         const savingArray = {
             id: this.currentRouteAttributes.id,
             name: this.currentRouteAttributes.name,
@@ -300,12 +321,12 @@ class PatrolClient {
         //this.singleDebug
         const timerID = alt.everyTick(() => {
 
-            this.DebugVisuals.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt.Player.local.pos);
+            this.debugVisuals.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt.Player.local.pos);
 
             if(ped.asignedRoute !== null){
                 const data = this.mainMap.get(ped.asignedRoute);
-                this.DebugVisuals.connectNodesLine(data.nodes, data.attributes);
-                this.DebugVisuals.drawRouteMarkers(data.nodes);
+                this.debugVisuals.connectNodesLine(data.nodes, data.attributes);
+                this.debugVisuals.drawRouteMarkers(data.nodes);
             }
         });
         this.singleDebug.set(ped.entity.id, timerID);
@@ -465,7 +486,7 @@ class PatrolClient {
     drawAllMarkers() {
         this.mainMap.forEach(({ nodes, attributes }) => {
             if( attributes.isdebuged === false ){
-            this.DebugVisuals.drawRouteMarkers(nodes);
+            this.debugVisuals.drawRouteMarkers(nodes);
             }
         });
     }
@@ -473,7 +494,7 @@ class PatrolClient {
     drawAllPedVisionCones(){
         this.mainPedMap.forEach((value) => {
             if( value.isdebuged === false ){
-                this.DebugVisuals.drawPedVisionCone(value.entity.pos, value.entity.scriptID, alt.Player.local.pos)
+                this.debugVisuals.drawPedVisionCone(value.entity.pos, value.entity.scriptID, alt.Player.local.pos)
             }
         });
 
@@ -483,7 +504,7 @@ class PatrolClient {
     connectAllRoutesLine() {
         this.mainMap.forEach(({ nodes, attributes }) => {
             if( attributes.isdebuged === false ){
-            this.DebugVisuals.connectNodesLine(nodes, attributes);
+            this.debugVisuals.connectNodesLine(nodes, attributes);
             }
         });
     }
@@ -536,7 +557,7 @@ async asignCurrentRouteToPed(ped, attributes, nodes) {
 }
 
 }
-
+/*
 class DebugVisuals{
     constructor() {
         this.viewDistance = defaultClientConfig.viewDistance;      // длина конуса
@@ -679,5 +700,5 @@ class DebugVisuals{
         return angleToPlayer <= halfAngleRad;
     }
 }
-
+*/
 new PatrolClient();
