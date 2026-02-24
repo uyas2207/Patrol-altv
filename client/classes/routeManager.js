@@ -2,28 +2,18 @@ import * as alt from 'alt-client';
 
 import * as native from 'natives';
 
-import { defaultClientConfig } from '../config/clientConfig.js';
-
-function drawNotification(message, autoHide = false) {
-    native.beginTextCommandThefeedPost('STRING');
-    native.addTextComponentSubstringPlayerName(`~r~${message}`);
-    const notificationId = native.endTextCommandThefeedPostTicker(false, false);
-    // Таймер для скрытия уведомления через 3 секунды если кроме текста сообщения также передали true
-    if (autoHide) {
-        alt.setTimeout(() => {
-            native.thefeedRemoveItem(notificationId);
-        }, 3000);
-    }
-}
 
 export class RouteManager {
-    constructor(pedManager) {
-        this.pedManager = pedManager;
+    constructor() {
+        this.pedManager = null;
 
         this.currentRouteMap = new Map();        // текущий маршрут
         this.mainMap = new Map();                // все маршруты на клиенте
-        this.currentRouteAttributes = null;       // атрибуты текущего маршрута
-        this.defaultConfig = defaultClientConfig;
+        this.currentRouteAttributes = null;       //в буддущем массив в котором будут доп знаечния для текщуего массива (looped, asigned, isdebuged)
+    }
+    //получает pedManager после его успешной инициализацити в PatrolClient
+    setPedManager(pedManager){
+        this.pedManager = pedManager;
     }
 
     //получает route с сервера и добавляет его в mainMap, если такой route еще не добавлен
@@ -176,18 +166,8 @@ export class RouteManager {
         this.currentRouteMap.clear();
         //так как произошел deletePatrolRoute ped больше не назначен маршрут и нужно сделать asignedRoute = null если сущуствовал ped с таким маршрутом
         this.pedManager.clearPedAssignment(tempID);
-        /*
-        this.mainPedMap.forEach((value) => {
-            if(value.asignedRoute === tempID){
-                value.asignedRoute = null;
-            }
-        });
-        */
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // логика из PatrolClient.sendRouteMap (часть с формированием savingArray)
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //отправляет на сервер текущий маршрут для сохранения его в общий список маршрутов в routePoints.json
     sendRouteMap(){           
         if ( this.currentRouteMap.size === 0 ) {
@@ -226,6 +206,8 @@ export class RouteManager {
         alt.log('this.currentRouteAttributes:', JSON.stringify(this.currentRouteAttributes));
     }
 
+    //доп методы для вызова из других классов
+
     hasRoute(routeID) {
         return this.mainMap.has(routeID);
     }
@@ -233,4 +215,23 @@ export class RouteManager {
     getRoute(routeID) {
         return this.mainMap.get(routeID);
     }
+
+    changeIsdebugedStatus(routeID, status){
+        if (status === true || status === false){
+            this.mainMap.get(routeID).attributes.isdebuged = status;
+        } 
+        else {
+            alt.log('Некорректное использование changeIsdebugedStatus');
+            alt.log('status может быть только true или false');
+            return;
+        }
+    }
+
+    // перебор всех маршрутов с колбэком
+    forEachRoute(callback) {
+        this.mainMap.forEach((value, routeId) => {
+            callback(value.attributes, value.nodes, routeId);
+        });
+    }
+
 }

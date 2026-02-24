@@ -68,14 +68,15 @@ return [
       },
       plugins: [
         new webpack.ProvidePlugin({
-          config: [
-            path.resolve(__dirname, 'shared/config.json'),
-            'routes'
-          ]
+          drawNotification: [
+            path.resolve(__dirname, 'client/utilities/utilities.js'),
+            'drawNotification'
+          ],
         }),
       ],
      devtool: false
     },
+
     {
       name: 'server',
       entry: [        
@@ -112,7 +113,7 @@ return [
       optimization: {
         minimize: isProduction
       },
-
+/*
       plugins: [
         new webpack.ProvidePlugin({
           config: [
@@ -121,7 +122,7 @@ return [
           ]
         }),
       ],
-
+*/
       devtool: false
     }
   ];

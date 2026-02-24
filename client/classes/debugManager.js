@@ -24,19 +24,19 @@ export class DebugManager {
     }
 
     drawAllMarkers() {
-        this.routeManager.mainMap.forEach(({ nodes, attributes }) => {
-            if(attributes.isdebuged === false){
+        this.routeManager.forEachRoute((attributes, nodes) => {
+            if (attributes.isdebuged === false) {
                 this.debugVisuals.drawRouteMarkers(nodes);
             }
         });
     }
 
     drawAllPedVisionCones() {
-        this.pedManager.getAllPeds().forEach((value) => {
-            if(value.isdebuged === false){
+        this.pedManager.forEachPed((ped) => {
+            if (ped.isdebuged === false) {
                 this.debugVisuals.drawPedVisionCone(
-                    value.entity.pos, 
-                    value.entity.scriptID, 
+                    ped.entity.pos,
+                    ped.entity.scriptID,
                     alt.Player.local.pos
                 );
             }
@@ -44,8 +44,8 @@ export class DebugManager {
     }
 
     connectAllRoutesLine() {
-        this.routeManager.mainMap.forEach(({ nodes, attributes }) => {
-            if(attributes.isdebuged === false){
+        this.routeManager.forEachRoute((attributes, nodes) => {
+            if (attributes.isdebuged === false) {
                 this.debugVisuals.connectNodesLine(nodes, attributes);
             }
         });

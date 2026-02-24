@@ -1,11 +1,9 @@
-import * as alt from 'alt-client';
-
 import * as native from 'natives';
 
-import { defaultClientConfig } from '../config/clientConfig.js';
+//import { defaultClientConfig } from '../config/clientConfig.js';
 
 export class DebugVisuals{
-    constructor() {
+    constructor(defaultClientConfig) {
         this.viewDistance = defaultClientConfig.viewDistance;      // длина конуса
         this.viewAngle = defaultClientConfig.viewAngle;       // угол обзора (градусы)
         this.viewSectors = defaultClientConfig.viewSectors;       //количество секторов видимости у ped

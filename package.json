@@ -1,0 +1,25 @@
+{
+  "name": "patrol",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "build": "webpack --mode=production",
+    "build:dev": "webpack --mode=development",
+    "dev": "webpack --mode=development --watch"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "babel-loader": "^9.1.0",
+    "webpack": "^5.102.1",
+    "webpack-cli": "^5.1.4"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/uyas2207/Patrol-altv/issues"
+  },
+  "homepage": "https://github.com/uyas2207/Patrol-altv#readme"
+}

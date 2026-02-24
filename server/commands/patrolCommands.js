@@ -97,8 +97,9 @@ export class PatrolCommands {
     //удаляет из текщуего маршрута точку с указаным в команде номером
     dellnodeCommand(player, arg){
         const result = (this.checkNode(player, arg));   //result = node_id или false если введены некоректные данные для node_id
-        if (!result){
-            chat.send(player, `Испрользование dellnode /dellnode node_id`);
+        //проверка !result не рабоатет, так как аргуменом может быть 0
+        if (result === false){
+            chat.send(player, `Использование dellnode /dellnode node_id`);
             return;
         }
         alt.emitClient(player, 'patrol:dellNode', (result));
@@ -107,8 +108,9 @@ export class PatrolCommands {
     //добавляет в текущий маршрут точку на которой стоит игрок
     addnodeCommand(player, node_id){
         const result = (this.checkNode(player, node_id));   //result = node_id или false если введены некоректные данные для node_id
-        if (!result){ 
-            chat.send(player, `Испрользование addnode /addnode node_id`);
+        //проверка !result не рабоатет, так как аргуменом может быть 0
+        if (result === false){
+            chat.send(player, `Использование addnode /addnode node_id`);
             return
         }
         //координаты ноды
