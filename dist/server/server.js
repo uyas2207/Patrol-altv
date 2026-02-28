@@ -126,10 +126,7 @@ class RouteStorage {
     var routeName = this.routeData.routes.findIndex(route => route.name === name);
     if (routeName === -1) {
       alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043D\u0430\u0439\u0442\u0438 route \u0441 \u043F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u043E\u043C name = ".concat(name));
-      alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, 'Существующие name:');
-      this.routeData.routes.forEach(routes => {
-        alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, routes.name);
-      });
+      this.printRoutesToPlayer(player);
       return;
     }
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:initRoutes', this.routeData.routes[routeName]);
@@ -139,6 +136,10 @@ class RouteStorage {
   save(player, clientRoute) {
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log(JSON.stringify(clientRoute));
     var routeIndex = this.routeData.routes.findIndex(route => route.name === clientRoute.name);
+    if (routeIndex === -1) {
+      alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "{eb4034}Ошибка, получен некорректный clientRoute");
+      return;
+    }
     this.routeData.routes[routeIndex] = clientRoute;
     fs__WEBPACK_IMPORTED_MODULE_2__.writeFileSync(this.filePath, JSON.stringify(this.routeData, null, 1), 'utf-8');
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, 'Маршрут успешно сохранён');
@@ -259,11 +260,14 @@ class PatrolCommands {
     } else {
       alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430\u044F \u043A\u043E\u043C\u0430\u043D\u0434\u0430: /".concat(category, " ").concat(subCommand));
       alt_server__WEBPACK_IMPORTED_MODULE_0__.log('Вывод информации из help (else)');
-      this.showHelp(player);
+      this.showHelp(player, category);
     }
   }
-  showHelp(player) {
+  showHelp(player, category) {
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, 'Доступные команды:');
+    Object.keys(this.commands[category]).forEach(command => {
+      alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "/".concat(category, " ").concat(command));
+    });
   }
 
   //создает новый маршрут в файле routePoints.json и передает его на клиент
@@ -389,7 +393,7 @@ class PatrolCommands {
       return;
     }
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log('pedId = ', pedId);
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:pedinfo', pedId);
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:pedInfo', pedId);
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "/ped info ".concat(pedId));
   }
   //выводит всю информацию о ped из клиентской map mainPedMap (asignedRoute, isdebuged)

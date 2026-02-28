@@ -32,8 +32,6 @@ class PatrolServer {
             this.patrolCommands.registerCommands();
         });
 
-
-
         alt.onClient('patrol:sendRouteMap', (player, clientRoute) => {
             this.routeStorage.save(player, clientRoute);
         });

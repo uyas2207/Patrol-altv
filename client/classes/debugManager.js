@@ -5,7 +5,7 @@ export class DebugManager {
         this.pedManager = pedManager;
         this.routeManager = routeManager;
         this.debugVisuals = debugVisuals;
-        this.debug = null;  // хранит everytick для общего debug
+        this.debug = null;  // хранит everytick для глобального debug
     }
 
     turnOnGlobalDebug() {

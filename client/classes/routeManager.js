@@ -9,7 +9,7 @@ export class RouteManager {
 
         this.currentRouteMap = new Map();        // текущий маршрут
         this.mainMap = new Map();                // все маршруты на клиенте
-        this.currentRouteAttributes = null;       //в буддущем массив в котором будут доп знаечния для текщуего массива (looped, asigned, isdebuged)
+        this.currentRouteAttributes = null;      //в буддущем массив в котором будут доп знаечния для текщуего массива (looped, asigned, isdebuged)
     }
     //получает pedManager после его успешной инициализацити в PatrolClient
     setPedManager(pedManager){
@@ -226,11 +226,36 @@ export class RouteManager {
             return;
         }
     }
+    //смена статуса asigned, после смены ped.asignedRoute route в классе PedManager
+    asignRouteToPed(routeID, pedId){
+        if(this.mainMap.has(routeID)){
+            const route = this.getRoute(routeID);
+            route.attributes.asigned = pedId;
+        }
+        else{
+            alt.log('Передан неверный routeID в asignRouteToPed');
+        }
+    }
+    //смена статуса asigned, после смены ped.asignedRoute route в классе PedManager
+    unAsignRouteFromPed(routeID, pedId){
+        if(this.mainMap.has(routeID)){
+            const route = this.getRoute(routeID);
+            if (route.attributes.asigned === pedId){
+                route.attributes.asigned = null;
+            }
+            else{
+                alt.log(`Ped: ${pedID} не был назначен routeID: ${routeID}`);
+            }
+        }
+        else{
+            alt.log('Передан неверный routeID в unAsignRouteFromPed');
+        }
+    }
 
     // перебор всех маршрутов с колбэком
     forEachRoute(callback) {
         this.mainMap.forEach((value, routeId) => {
-            callback(value.attributes, value.nodes, routeId);
+            callback(value.attributes, value.nodes);
         });
     }
 

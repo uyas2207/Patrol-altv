@@ -19,7 +19,7 @@ class DebugManager {
     this.pedManager = pedManager;
     this.routeManager = routeManager;
     this.debugVisuals = debugVisuals;
-    this.debug = null; // хранит everytick для общего debug
+    this.debug = null; // хранит everytick для глобального debug
   }
   turnOnGlobalDebug() {
     this.debug = alt_client__WEBPACK_IMPORTED_MODULE_0__.everyTick(() => {
@@ -71,9 +71,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var natives__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! natives */ "natives");
 
-
-//import { defaultClientConfig } from '../config/clientConfig.js';
-
 class DebugVisuals {
   constructor(defaultClientConfig) {
     this.viewDistance = defaultClientConfig.viewDistance; // длина конуса
@@ -123,8 +120,8 @@ class DebugVisuals {
         b: 0,
         a: 200
       };
-      natives__WEBPACK_IMPORTED_MODULE_0__.drawMarker(0, playerpos.x, playerpos.y, playerpos.z + 1.0, 0, 0, 0, 0, 0, 0, 0.15, 0.15, 0.15, 255, 0, 0, 200, true, true, 2, 0, 0, 0, false);
-      natives__WEBPACK_IMPORTED_MODULE_0__.drawLine(pedPos.x, pedPos.y, pedPos.z + 0.1, playerpos.x, playerpos.y, playerpos.z + 0.5, 255, 0, 0, 200);
+      natives__WEBPACK_IMPORTED_MODULE_0__.drawMarker(0, playerpos.x, playerpos.y, playerpos.z + 1.0, 0, 0, 0, 0, 0, 0, 0.15, 0.15, 0.15, coneColor.r, coneColor.g, coneColor.b, coneColor.a, true, true, 2, 0, 0, 0, false);
+      natives__WEBPACK_IMPORTED_MODULE_0__.drawLine(pedPos.x, pedPos.y, pedPos.z + 0.1, playerpos.x, playerpos.y, playerpos.z + 0.5, coneColor.r, coneColor.g, coneColor.b, coneColor.a);
     }
     for (var i = -halfAngleRad; i <= halfAngleRad; i += stepAngleRad) {
       var currentAngle = headingRad + i;
@@ -144,6 +141,8 @@ class DebugVisuals {
       };
     }
   }
+
+  //логика для определения находится ли игрок в области видимости ped
   isPlayerInVisionCone(playerPos, headingRad, halfAngleRad, pedPos) {
     var toPlayerX = playerPos.x - pedPos.x;
     var toPlayerY = playerPos.y - pedPos.y;
@@ -178,9 +177,6 @@ __webpack_require__.r(__webpack_exports__);
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
-
-
-//import { defaultClientConfig } from '../config/clientConfig.js';
 
 class PedManager {
   constructor(routeManager, debugVisuals, defaultClientConfig) {
@@ -222,7 +218,7 @@ class PedManager {
     })();
   }
   asignRouteToPed(pedId, routeID) {
-    // Проверка наличия маршрута
+    // проверка существования маршрута
     if (this.routeManager.hasRoute(routeID) === false) {
       drawNotification("Route \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D \u043D\u0430 \u043A\u043B\u0438\u0435\u043D\u0442");
       drawNotification("\u0427\u0442\u043E \u0431\u044B \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C Route \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u043A\u043E\u043C\u0430\u043D\u0434\u0443 /load");
@@ -237,21 +233,34 @@ class PedManager {
     alt_client__WEBPACK_IMPORTED_MODULE_0__.log('route:', JSON.stringify(route));
     alt_client__WEBPACK_IMPORTED_MODULE_0__.log('ped:', JSON.stringify(ped));
 
-    // Выполнение патрулирования (было в asignCurrentRouteToPed)
+    // назначение маршртуа ped
     this.asignCurrentRouteToPed(ped.entity, route.attributes, route.nodes);
 
-    // Очистка предыдущих назначений того же маршрута
-    this.updatePedAssignment(routeID, pedId);
+    //так как asignCurrentRouteToPed не позволяет делать один и тот же маршрут разным ped (делает в начале deletePatrolRoute) 
+    //нужно после выполнения asignCurrentRouteToPed очищать в map значения asignedRoute такие же как routeID, так как этим ped больше не назначен этот маршрут
 
-    // Обновление данных ped
+    //проверяет всю mainPedMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать asignedRoute = null;
+    this.clearPedAssignment(routeID);
+
+    //запоминает какой маршрту был назначен для этого ped
     ped.asignedRoute = routeID;
+    //изменяет в классе routeManager значение asigned для необходимого маршрута
+    this.routeManager.asignRouteToPed(routeID, pedId);
 
-    // Обновление данных маршрута
-    route.attributes.asigned = pedId;
+    //в случае когда ped был со включенным debug и ему назначили маршрут нужно сделать значение маршртуа isdebuged в routeManager
+    if (ped.isdebuged === true) {
+      this.routeManager.changeIsdebugedStatus(ped.asignedRoute, true);
+    }
+    //route.attributes.asigned = pedId;
   }
-  updatePedAssignment(routeID, currentPedId) {
+
+  //проверяет всю mainPedMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать asignedRoute = null;
+  clearPedAssignment(routeID) {
+    //pedId
+    // обновление asignedRoute в mainPedMap
     this.mainPedMap.forEach(value => {
-      if (value.asignedRoute === routeID && value.entity.id !== currentPedId) {
+      if (value.asignedRoute === routeID) {
+        // && value.entity.id !== pedId
         value.asignedRoute = null;
       }
     });
@@ -294,12 +303,15 @@ class PedManager {
     if (ped.asignedRoute !== null) {
       var data = this.routeManager.getRoute(ped.asignedRoute);
       natives__WEBPACK_IMPORTED_MODULE_1__.deletePatrolRoute("miss_".concat(data.attributes.name));
-      ped.asignedRoute = null;
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0423\u0434\u0430\u043B\u0435\u043D \u043C\u0430\u0440\u0448\u0440\u0443\u0442 ".concat(data.attributes.name, " \u0434\u043B\u044F ped ").concat(pedID));
+      this.routeManager.unAsignRouteFromPed(ped.asignedRoute, pedID);
       if (data.attributes.isdebuged === true) {
-        data.attributes.isdebuged = false;
+        this.routeManager.changeIsdebugedStatus(ped.asignedRoute, false);
+        //data.attributes.isdebuged = false;
+
         alt_client__WEBPACK_IMPORTED_MODULE_0__.log('route.isdebuged = false => будет повторяться в общем debug');
       }
+      ped.asignedRoute = null;
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0423\u0434\u0430\u043B\u0435\u043D \u043C\u0430\u0440\u0448\u0440\u0443\u0442 ".concat(data.attributes.name, " \u0434\u043B\u044F ped ").concat(pedID));
     } else {
       drawNotification("Ped ".concat(pedID, " \u043D\u0435 \u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D \u043D\u0438\u043A\u0430\u043A\u043E\u0439 \u043C\u0430\u0440\u0448\u0440\u0443\u0442"));
     }
@@ -318,8 +330,6 @@ class PedManager {
       alt_client__WEBPACK_IMPORTED_MODULE_0__.log('route.isdebuged = true, не будет повторяться в общем debug');
     }
     ped.isdebuged = true;
-    //            const ped = this.mainPedMap.get(arg);
-    //this.singleDebug
     var timerID = alt_client__WEBPACK_IMPORTED_MODULE_0__.everyTick(() => {
       this.debugVisuals.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.pos);
       if (ped.asignedRoute !== null) {
@@ -340,19 +350,9 @@ class PedManager {
     ped.isdebuged = false;
     if (ped.asignedRoute !== null) {
       this.routeManager.changeIsdebugedStatus(ped.asignedRoute, false);
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('route.isdebuged = false, не будет повторяться в общем debug');
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('route.isdebuged = false => будет повторяться в общем debug');
     }
     alt_client__WEBPACK_IMPORTED_MODULE_0__.log("pedDebugTurnOff");
-  }
-  clearPedAssignment(routeID) {
-    //pedId
-    // обновление asignedRoute в mainPedMap
-    this.mainPedMap.forEach(value => {
-      if (value.asignedRoute === routeID) {
-        // && value.entity.id !== pedId
-        value.asignedRoute = null;
-      }
-    });
   }
 
   //выводит всю информацию о ped
@@ -391,14 +391,8 @@ class PedManager {
 
   // перебор всех педов с колбэком
   forEachPed(callback) {
-    this.mainPedMap.forEach((pedData, pedId) => {
-      // Передаём копию данных, чтобы предотвратить прямое изменение
-      callback({
-        id: pedId,
-        entity: pedData.entity,
-        asignedRoute: pedData.asignedRoute,
-        isdebuged: pedData.isdebuged
-      }, pedId);
+    this.mainPedMap.forEach((value, key) => {
+      callback(value);
     });
   }
 }
@@ -643,11 +637,33 @@ class RouteManager {
       return;
     }
   }
+  //смена статуса asigned, после смены ped.asignedRoute route в классе PedManager
+  asignRouteToPed(routeID, pedId) {
+    if (this.mainMap.has(routeID)) {
+      var route = this.getRoute(routeID);
+      route.attributes.asigned = pedId;
+    } else {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Передан неверный routeID в asignRouteToPed');
+    }
+  }
+  //смена статуса asigned, после смены ped.asignedRoute route в классе PedManager
+  unAsignRouteFromPed(routeID, pedId) {
+    if (this.mainMap.has(routeID)) {
+      var route = this.getRoute(routeID);
+      if (route.attributes.asigned === pedId) {
+        route.attributes.asigned = null;
+      } else {
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log("Ped: ".concat(pedID, " \u043D\u0435 \u0431\u044B\u043B \u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D routeID: ").concat(routeID));
+      }
+    } else {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Передан неверный routeID в unAsignRouteFromPed');
+    }
+  }
 
   // перебор всех маршрутов с колбэком
   forEachRoute(callback) {
     this.mainMap.forEach((value, routeId) => {
-      callback(value.attributes, value.nodes, routeId);
+      callback(value.attributes, value.nodes);
     });
   }
 }
@@ -826,7 +842,7 @@ class PatrolClient {
   }
   init() {
     //выводит всю информацию о ped
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('patrol:pedinfo', arg => {
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('patrol:pedInfo', arg => {
       this.pedManager.pedInfoCommand(arg);
     });
     //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.currentRouteMap + currentRouteAttributes

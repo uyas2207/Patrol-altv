@@ -1,12 +1,10 @@
 import * as native from 'natives';
 
-//import { defaultClientConfig } from '../config/clientConfig.js';
-
 export class DebugVisuals{
     constructor(defaultClientConfig) {
         this.viewDistance = defaultClientConfig.viewDistance;      // длина конуса
-        this.viewAngle = defaultClientConfig.viewAngle;       // угол обзора (градусы)
-        this.viewSectors = defaultClientConfig.viewSectors;       //количество секторов видимости у ped
+        this.viewAngle = defaultClientConfig.viewAngle;            // угол обзора (градусы)
+        this.viewSectors = defaultClientConfig.viewSectors;        //количество секторов видимости у ped
 
         this.defaultConfig = defaultClientConfig;
     }
@@ -85,13 +83,13 @@ export class DebugVisuals{
                 0, 0, 0,
                 0, 0, 0,
                 0.15, 0.15, 0.15,
-                255, 0, 0, 200,
+                coneColor.r, coneColor.g, coneColor.b, coneColor.a,
                 true, true, 2, 0, 0, 0, false
             );
             native.drawLine(
                 pedPos.x, pedPos.y, pedPos.z + 0.1,
                 playerpos.x, playerpos.y, playerpos.z + 0.5,
-                255, 0, 0, 200
+                coneColor.r, coneColor.g, coneColor.b, coneColor.a
             );
         }
         for (let i = -halfAngleRad; i <= halfAngleRad; i += stepAngleRad) {
@@ -122,6 +120,7 @@ export class DebugVisuals{
         }
     }
 
+    //логика для определения находится ли игрок в области видимости ped
     isPlayerInVisionCone(playerPos, headingRad, halfAngleRad, pedPos) {
 
         const toPlayerX = playerPos.x - pedPos.x;

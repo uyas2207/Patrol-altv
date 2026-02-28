@@ -17,10 +17,7 @@ export class RouteStorage {
         const routeName = this.routeData.routes.findIndex(route => route.name === name);
         if( routeName === -1 ){
             chat.send(player, `Не удалось найти route с параметром name = ${name}`);
-            chat.send(player, 'Существующие name:');
-            this.routeData.routes.forEach(routes => {
-                chat.send(player, routes.name);
-            });
+            this.printRoutesToPlayer(player);
             return;
         }
 
@@ -31,11 +28,14 @@ export class RouteStorage {
 
     save(player, clientRoute) {
         alt.log(JSON.stringify(clientRoute));
-
         const routeIndex = this.routeData.routes.findIndex(route => route.name === clientRoute.name);
+        
+        if( routeIndex === -1 ){
+            chat.send(player, "{eb4034}Ошибка, получен некорректный clientRoute");
+            return;
+        }
 
         this.routeData.routes[routeIndex] = clientRoute;
-
         fs.writeFileSync( this.filePath, JSON.stringify(this.routeData, null, 1), 'utf-8' );
         chat.send(player, 'Маршрут успешно сохранён');
     }
@@ -57,10 +57,10 @@ export class RouteStorage {
             // alt.log('lastId=',lastId);
                 
             const newRoute = {
-                    id: lastId+1,
-                    name: name,
-                    looped: false,
-                    nodes: []
+                id: lastId+1,
+                name: name,
+                looped: false,
+                nodes: []
             };
             //alt.log('newRoute=',newRoute);
             this.routeData.routes.push(newRoute); 

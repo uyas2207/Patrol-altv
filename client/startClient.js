@@ -24,7 +24,7 @@ class PatrolClient {
     init(){
 
         //выводит всю информацию о ped
-        alt.onServer('patrol:pedinfo', (arg) => {
+        alt.onServer('patrol:pedInfo', (arg) => {
             this.pedManager.pedInfoCommand(arg);
         });
         //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.currentRouteMap + currentRouteAttributes

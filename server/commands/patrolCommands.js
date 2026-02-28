@@ -60,13 +60,15 @@ export class PatrolCommands {
         } else {
             chat.send(player, `Неизвестная команда: /${category} ${subCommand}`);
             alt.log('Вывод информации из help (else)');
-            this.showHelp(player);
+            this.showHelp(player, category);
         }
     }
 
-    showHelp(player, ){
+    showHelp(player, category){
         chat.send(player, 'Доступные команды:');
-        
+        Object.keys(this.commands[category]).forEach(command => {
+            chat.send(player, `/${category} ${command}`);
+        });
     }
 
     //создает новый маршрут в файле routePoints.json и передает его на клиент
@@ -203,7 +205,7 @@ export class PatrolCommands {
         }
 
         alt.log('pedId = ', pedId);
-        alt.emitClient(player, 'patrol:pedinfo', pedId);
+        alt.emitClient(player, 'patrol:pedInfo', pedId);
         chat.send(player, `/ped info ${pedId}`);
     }
     //выводит всю информацию о ped из клиентской map mainPedMap (asignedRoute, isdebuged)
