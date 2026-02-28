@@ -318,6 +318,10 @@ class PedManager {
   }
   pedDebug(arg) {
     var ped = this.mainPedMap.get(arg);
+    if (!ped) {
+      drawNotification("Ped=".concat(arg, " \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D"));
+      return;
+    }
     if (ped.isdebuged === false) {
       this.pedDebugTurnOn(ped);
     } else {

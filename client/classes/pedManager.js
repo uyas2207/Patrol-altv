@@ -163,6 +163,12 @@ export class PedManager {
     pedDebug(arg){
         
         const ped = this.mainPedMap.get(arg);
+
+        if (!ped) {
+            drawNotification(`Ped=${arg} не найден`);
+            return;
+        }
+
         if (ped.isdebuged === false){
             this.pedDebugTurnOn(ped);
         }
