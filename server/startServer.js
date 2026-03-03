@@ -6,11 +6,14 @@ import { PedManager } from './classes/pedManager.js';
 import { Debug } from './classes/debug.js';
 import { PatrolCommands } from './commands/patrolCommands.js';
 
+import { defaultParameters } from './config/serverconfig.js';
+import { npcs } from './config/serverconfig.js';
+
 class PatrolServer {
     constructor() {
 
         this.routeStorage = new RouteStorage('./resources/patrol/data/routePoints.json');
-        this.pedManager = new PedManager;
+        this.pedManager = new PedManager(defaultParameters, npcs);
         this.debug = new Debug;
         this.patrolCommands = new PatrolCommands(this.pedManager, this.routeStorage, this.debug);
 

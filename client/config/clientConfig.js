@@ -3,6 +3,7 @@ export const defaultClientConfig = {
     animation: "StandGuard",
     markerType: 10,
     markerColour: { r: 255, g: 255, b: 255, a: 255 },
+    waitTime: 1000,
     viewDistance: 4,     // длина конуса
     viewAngle: 80,         // угол обзора (градусы)
     viewSectors: 7,       //количество секторов видимости у ped

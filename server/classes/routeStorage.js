@@ -50,23 +50,26 @@ export class RouteStorage {
         }
         else {
             
-            //   alt.log('this.routeData.routes.length =', this.routeData.routes.length);
-            const lastIndex = this.routeData.routes.length-1;
-            //  alt.log('lastIndex=',lastIndex);
-            const lastId = this.routeData.routes[lastIndex].id;
-            // alt.log('lastId=',lastId);
-                
+            //проверка всех routes и поиск максимального id на случай если в routePoints.json id маршрутов идут не по порядку
+            let maxId = 0;
+            this.routeData.routes.forEach(route => {
+                if (route.id > maxId){
+                    maxId = route.id;
+                }
+            });
+
             const newRoute = {
-                id: lastId+1,
+                id: maxId+1,
                 name: name,
                 looped: false,
                 nodes: []
             };
-            //alt.log('newRoute=',newRoute);
-            this.routeData.routes.push(newRoute); 
 
+            this.routeData.routes.push(newRoute); 
             fs.writeFileSync( this.filePath,  JSON.stringify(this.routeData, null, 1), 'utf-8' );
-            alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[lastIndex+1]);
+
+            const lastIndex = this.routeData.routes.length-1;
+            alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[lastIndex]);
             chat.send(player, `Создан и передан новый route ${name}`);
         }
     }

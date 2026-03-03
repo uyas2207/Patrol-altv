@@ -419,7 +419,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 class RouteManager {
-  constructor() {
+  constructor(defaultClientConfig) {
+    this.defaultConfig = defaultClientConfig;
     this.pedManager = null;
     this.currentRouteMap = new Map(); // текущий маршрут
     this.mainMap = new Map(); // все маршруты на клиенте
@@ -525,7 +526,7 @@ class RouteManager {
         z: lookingCoords.z
       },
       //координаты на которые будет смотреть ped 
-      waitTime: 1000
+      waitTime: this.defaultConfig.waitTime
     };
     //все ноды идут в порядке возрастания что бы при добавлении ноды она не вставала в конец map
     // и не происходили ситуации когда ped следует по маршруту по точками 1-> 9-> 4-> 2-> 5-> 7-> 0
@@ -698,6 +699,7 @@ var defaultClientConfig = {
     b: 255,
     a: 255
   },
+  waitTime: 1000,
   viewDistance: 4,
   // длина конуса
   viewAngle: 80,
@@ -838,7 +840,7 @@ class PatrolClient {
   constructor() {
     this.debugVisuals = new _classes_debugVisuals_js__WEBPACK_IMPORTED_MODULE_5__.DebugVisuals(_config_clientConfig_js__WEBPACK_IMPORTED_MODULE_1__.defaultClientConfig); //класс для визуального отображения debug
 
-    this.routeManager = new _classes_routeManager_js__WEBPACK_IMPORTED_MODULE_2__.RouteManager();
+    this.routeManager = new _classes_routeManager_js__WEBPACK_IMPORTED_MODULE_2__.RouteManager(_config_clientConfig_js__WEBPACK_IMPORTED_MODULE_1__.defaultClientConfig);
     this.pedManager = new _classes_pedManager_js__WEBPACK_IMPORTED_MODULE_3__.PedManager(this.routeManager, this.debugVisuals, _config_clientConfig_js__WEBPACK_IMPORTED_MODULE_1__.defaultClientConfig);
     this.debugManager = new _classes_debugManager_js__WEBPACK_IMPORTED_MODULE_4__.DebugManager(this.pedManager, this.routeManager, this.debugVisuals);
     this.routeManager.setPedManager(this.pedManager);

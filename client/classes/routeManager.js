@@ -4,7 +4,8 @@ import * as native from 'natives';
 
 
 export class RouteManager {
-    constructor() {
+    constructor(defaultClientConfig) {
+        this.defaultConfig = defaultClientConfig;
         this.pedManager = null;
 
         this.currentRouteMap = new Map();        // текущий маршрут
@@ -106,7 +107,7 @@ export class RouteManager {
             index: arg,
             position: { x:coords.x, y:coords.y, z:coords.z },
             rotation: { x: lookingCoords.x, y: lookingCoords.y, z: lookingCoords.z },   //координаты на которые будет смотреть ped 
-            waitTime: 1000
+            waitTime: this.defaultConfig.waitTime
         }
         //все ноды идут в порядке возрастания что бы при добавлении ноды она не вставала в конец map
         // и не происходили ситуации когда ped следует по маршруту по точками 1-> 9-> 4-> 2-> 5-> 7-> 0

@@ -60,7 +60,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
 /* harmony import */ var alt_chat__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! alt:chat */ "alt:chat");
-/* harmony import */ var _config_serverconfig_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../config/serverconfig.js */ "./server/config/serverconfig.js");
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
@@ -68,26 +67,26 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
 // Your chat resource module.
 
-
-
 class PedManager {
-  constructor() {
+  constructor(defaultParameters, npcs) {
     _defineProperty(this, "spawnDefaultNpcs", () => {
-      _config_serverconfig_js__WEBPACK_IMPORTED_MODULE_2__.npcs.forEach(npc => {
+      this.npcs.forEach(npc => {
         var ped = new alt_server__WEBPACK_IMPORTED_MODULE_0__.Ped(npc.model, new alt_server__WEBPACK_IMPORTED_MODULE_0__.Vector3(npc.position.x, npc.position.y, npc.position.z), new alt_server__WEBPACK_IMPORTED_MODULE_0__.Vector3(npc.rotation.x, npc.rotation.y, npc.rotation.z));
-        ped.dimension = _config_serverconfig_js__WEBPACK_IMPORTED_MODULE_2__.defaultParameters.dimension;
-        ped.invincible = _config_serverconfig_js__WEBPACK_IMPORTED_MODULE_2__.defaultParameters.invincible;
+        ped.dimension = this.defaultParameters.dimension;
+        ped.invincible = this.defaultParameters.invincible;
         //ped.collision = defaultParameters.collision;  //что бы ped не сталкивались друг с другом (и не сбивали друг другу маршруты) если у них маршруты пересекаются 
       });
     });
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.log('defaultParameters:', _config_serverconfig_js__WEBPACK_IMPORTED_MODULE_2__.defaultParameters);
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.log('npcs', _config_serverconfig_js__WEBPACK_IMPORTED_MODULE_2__.npcs.length);
+    this.defaultParameters = defaultParameters;
+    this.npcs = npcs;
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.log('defaultParameters:', this.defaultParameters);
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.log('npcs', this.npcs.length);
   }
   //проверка что PedID из команды входит в npcs.length
   checkNpcs(player, arg) {
     var pedId = parseInt(arg[0]);
-    if (isNaN(pedId) || arg[0].length !== 1 || pedId < 1 || pedId > _config_serverconfig_js__WEBPACK_IMPORTED_MODULE_2__.npcs.length) {
-      alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "\u0410\u0440\u0443\u0433\u043C\u0435\u043D\u0442\u043E\u043C \u043C\u043E\u0436\u0435\u0442 \u0431\u044B\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u0446\u0435\u043B\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u043E\u0442 1 \u0434\u043E ".concat(_config_serverconfig_js__WEBPACK_IMPORTED_MODULE_2__.npcs.length));
+    if (isNaN(pedId) || arg[0].length !== 1 || pedId < 1 || pedId > this.npcs.length) {
+      alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "\u0410\u0440\u0443\u0433\u043C\u0435\u043D\u0442\u043E\u043C \u043C\u043E\u0436\u0435\u0442 \u0431\u044B\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u0446\u0435\u043B\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u043E\u0442 1 \u0434\u043E ".concat(this.npcs.length));
       return false;
     } else {
       return pedId;
@@ -150,22 +149,23 @@ class RouteStorage {
       alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "Route \u0441 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435\u043C ".concat(name, " \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442"));
       return;
     } else {
-      //   alt.log('this.routeData.routes.length =', this.routeData.routes.length);
-      var lastIndex = this.routeData.routes.length - 1;
-      //  alt.log('lastIndex=',lastIndex);
-      var lastId = this.routeData.routes[lastIndex].id;
-      // alt.log('lastId=',lastId);
-
+      //проверка всех routes и поиск максимального id на случай если в routePoints.json id маршрутов идут не по порядку
+      var maxId = 0;
+      this.routeData.routes.forEach(route => {
+        if (route.id > maxId) {
+          maxId = route.id;
+        }
+      });
       var newRoute = {
-        id: lastId + 1,
+        id: maxId + 1,
         name: name,
         looped: false,
         nodes: []
       };
-      //alt.log('newRoute=',newRoute);
       this.routeData.routes.push(newRoute);
       fs__WEBPACK_IMPORTED_MODULE_2__.writeFileSync(this.filePath, JSON.stringify(this.routeData, null, 1), 'utf-8');
-      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:initRoutes', this.routeData.routes[lastIndex + 1]);
+      var lastIndex = this.routeData.routes.length - 1;
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:initRoutes', this.routeData.routes[lastIndex]);
       alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "\u0421\u043E\u0437\u0434\u0430\u043D \u0438 \u043F\u0435\u0440\u0435\u0434\u0430\u043D \u043D\u043E\u0432\u044B\u0439 route ".concat(name));
     }
   }
@@ -583,6 +583,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _classes_pedManager_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./classes/pedManager.js */ "./server/classes/pedManager.js");
 /* harmony import */ var _classes_debug_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./classes/debug.js */ "./server/classes/debug.js");
 /* harmony import */ var _commands_patrolCommands_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./commands/patrolCommands.js */ "./server/commands/patrolCommands.js");
+/* harmony import */ var _config_serverconfig_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./config/serverconfig.js */ "./server/config/serverconfig.js");
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 // alt:V built-in module that provides server-side API.
@@ -591,10 +592,12 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
 
 
 
+
+
 class PatrolServer {
   constructor() {
     this.routeStorage = new _classes_routeStorage_js__WEBPACK_IMPORTED_MODULE_1__.RouteStorage('./resources/patrol/data/routePoints.json');
-    this.pedManager = new _classes_pedManager_js__WEBPACK_IMPORTED_MODULE_2__.PedManager();
+    this.pedManager = new _classes_pedManager_js__WEBPACK_IMPORTED_MODULE_2__.PedManager(_config_serverconfig_js__WEBPACK_IMPORTED_MODULE_5__.defaultParameters, _config_serverconfig_js__WEBPACK_IMPORTED_MODULE_5__.npcs);
     this.debug = new _classes_debug_js__WEBPACK_IMPORTED_MODULE_3__.Debug();
     this.patrolCommands = new _commands_patrolCommands_js__WEBPACK_IMPORTED_MODULE_4__.PatrolCommands(this.pedManager, this.routeStorage, this.debug);
     this.init();

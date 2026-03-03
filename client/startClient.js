@@ -12,7 +12,7 @@ class PatrolClient {
         
         this.debugVisuals = new DebugVisuals(defaultClientConfig); //класс для визуального отображения debug
 
-        this.routeManager = new RouteManager();
+        this.routeManager = new RouteManager(defaultClientConfig);
         this.pedManager = new PedManager(this.routeManager, this.debugVisuals, defaultClientConfig);
         this.debugManager = new DebugManager(this.pedManager, this.routeManager, this.debugVisuals);
     
