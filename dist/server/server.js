@@ -294,8 +294,8 @@ class PatrolCommands {
     this.routeStorage.load(player, name);
   }
   //удаляет из текщуего маршрута точку с указаным в команде номером
-  dellnodeCommand(player, arg) {
-    var result = this.checkNode(player, arg); //result = node_id или false если введены некоректные данные для node_id
+  dellnodeCommand(player, node_id) {
+    var result = this.checkNode(player, node_id); //result = node_id или false если введены некоректные данные для node_id
     //проверка !result не рабоатет, так как аргуменом может быть 0
     if (result === false) {
       alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435 dellnode /dellnode node_id");
@@ -327,7 +327,7 @@ class PatrolCommands {
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:addNode', roundedPos, lookingPoint, result);
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "/addnode ".concat(result));
   }
-  //отображает debug для конкретного ped, его облапсть видимости и маршрут который ему назначен если такой есть
+  //отображает общий debug, все переданные на клиент маршруты и все области видимости ped
   debugCommand(player) {
     this.debug.toggle(player);
   }

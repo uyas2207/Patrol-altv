@@ -7,16 +7,20 @@ import { PedManager } from './classes/pedManager.js';
 import { DebugManager } from './classes/debugManager.js';
 import { DebugVisuals } from './classes/debugVisuals.js';
 
+import { PedDebugManager } from './classes/pedDebugManager.js';
+
 class PatrolClient {
     constructor() {
-        
+
         this.debugVisuals = new DebugVisuals(defaultClientConfig); //класс для визуального отображения debug
 
         this.routeManager = new RouteManager(defaultClientConfig);
-        this.pedManager = new PedManager(this.routeManager, this.debugVisuals, defaultClientConfig);
+        this.pedManager = new PedManager(this.routeManager, defaultClientConfig);
         this.debugManager = new DebugManager(this.pedManager, this.routeManager, this.debugVisuals);
     
         this.routeManager.setPedManager(this.pedManager);
+
+        this.pedDebugManager = new PedDebugManager(this.debugVisuals, this.pedManager, this.routeManager);
 
         this.init();
     }
@@ -55,7 +59,9 @@ class PatrolClient {
         //включает debug для конкретного ped (его область видимости и его маршрут если у него есть asignedRoute)
         alt.onServer('patrol:pedDebug', (arg) => {
             alt.log(`ped ${arg} Debug`);
-            this.pedManager.pedDebug(arg);
+            
+            this.pedDebugManager.pedDebug(arg);
+//          this.pedManager.pedDebug(arg);
         });
 
         //отображать debug, после команды с сервера

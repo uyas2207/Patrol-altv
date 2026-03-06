@@ -4,11 +4,9 @@ import * as native from 'natives';
 
 
 export class PedManager {
-    constructor(routeManager, debugVisuals, defaultClientConfig) {
+    constructor(routeManager, defaultClientConfig) {
         this.mainPedMap = new Map();    // хранит данные о ped (ped, asignedRoute, isdebuged)
         this.routeManager = routeManager;
-        this.debugVisuals = debugVisuals;
-        this.singleDebug = new Map();   // хранит everytick для визульного отображения у конкретных ped
         this.defaultConfig = defaultClientConfig;
     }
 
@@ -44,12 +42,12 @@ export class PedManager {
         // проверка существования маршрута
         if (this.routeManager.hasRoute(routeID) === false) {
             drawNotification(`Route не загружен на клиент`);
-            drawNotification(`Что бы загрузить Route используйте команду /load`);
+            drawNotification(`Что бы загрузить Route используйте команду /path load`);
             return;
         }
 
         const route = this.routeManager.getRoute(routeID);
-        const ped = this.getPed(pedId);
+        const ped = this.mainPedMap.get(pedId);
     
         if (!ped) {
             drawNotification(`Ped ${pedId} не найден`);
@@ -75,13 +73,13 @@ export class PedManager {
 
         //в случае когда ped был со включенным debug и ему назначили маршрут нужно сделать значение маршртуа isdebuged в routeManager
         if (ped.isdebuged === true) {
-            this.routeManager.changeIsdebugedStatus(ped.asignedRoute, true);
+            this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, true);
         }
         //route.attributes.asigned = pedId;
     }
 
     //проверяет всю mainPedMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать asignedRoute = null;
-    clearPedAssignment(routeID) {    //pedId
+    clearPedAssignment(routeID) {
         // обновление asignedRoute в mainPedMap
         this.mainPedMap.forEach((value) => {
             if(value.asignedRoute === routeID){ // && value.entity.id !== pedId
@@ -146,7 +144,7 @@ export class PedManager {
             this.routeManager.unAsignRouteFromPed(ped.asignedRoute, pedID);
             
             if (data.attributes.isdebuged === true){
-                this.routeManager.changeIsdebugedStatus(ped.asignedRoute, false);
+                this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, false);
                 //data.attributes.isdebuged = false;
             
                 alt.log('route.isdebuged = false => будет повторяться в общем debug');
@@ -159,62 +157,7 @@ export class PedManager {
             drawNotification(`Ped ${pedID} не назначен никакой маршрут`);
         }
     }
-
-    pedDebug(arg){
-        
-        const ped = this.mainPedMap.get(arg);
-
-        if (!ped) {
-            drawNotification(`Ped=${arg} не найден`);
-            return;
-        }
-
-        if (ped.isdebuged === false){
-            this.pedDebugTurnOn(ped);
-        }
-        else{
-            this.pedDebugTurnOff(ped);
-        }
-        
-    }
-
-    pedDebugTurnOn(ped){
-        if( ped.asignedRoute !== null ){
-            this.routeManager.changeIsdebugedStatus(ped.asignedRoute, true);
-            alt.log('route.isdebuged = true, не будет повторяться в общем debug');
-        }
-        ped.isdebuged = true;
-        
-        const timerID = alt.everyTick(() => {
-
-            this.debugVisuals.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt.Player.local.pos);
-
-            if(ped.asignedRoute !== null){
-                const data = this.routeManager.getRoute(ped.asignedRoute);
-                this.debugVisuals.connectNodesLine(data.nodes, data.attributes);
-                this.debugVisuals.drawRouteMarkers(data.nodes);
-            }
-        });
-        this.singleDebug.set(ped.entity.id, timerID);
-        alt.log('this.singleDebug', this.singleDebug);
-
-    }
-
-    pedDebugTurnOff(ped){
-            const timerId = this.singleDebug.get(ped.entity.id);
-            alt.clearEveryTick(timerId);
-            this.singleDebug.delete(ped.entity.id)
-            alt.log('this.singleDebug', this.singleDebug);
-//            this.singleDebug = null;
-            ped.isdebuged = false;
-            if( ped.asignedRoute !== null ){
-                this.routeManager.changeIsdebugedStatus(ped.asignedRoute, false);
-                alt.log('route.isdebuged = false => будет повторяться в общем debug');
-            }
-            
-            alt.log(`pedDebugTurnOff`);
-    }
-
+    
     //выводит всю информацию о ped
     pedInfoCommand(arg){
         const data = this.mainPedMap.get(arg);
@@ -241,13 +184,29 @@ export class PedManager {
     }
 
     //доп методы для вызова из других классов
-
+/*
     getPed(pedId) {
         return this.mainPedMap.get(pedId);
+    }
+*/
+    getPed(pedId) {
+        const ped = this.mainPedMap.get(pedId);
+        return { ...ped }; // возвращает копию
     }
 
     getAllPeds() {
         return this.mainPedMap;
+    }
+
+    changePedIsdebugedStatus(pedId, status){
+        if (status === true || status === false){
+            this.mainPedMap.get(pedId).isdebuged = status;
+        }
+        else {
+            alt.log('Некорректное использование changePedIsdebugedStatus');
+            alt.log('status может быть только true или false');
+            return;
+        }
     }
 
     // перебор всех педов с колбэком

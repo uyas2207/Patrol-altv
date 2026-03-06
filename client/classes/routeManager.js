@@ -217,12 +217,12 @@ export class RouteManager {
         return this.mainMap.get(routeID);
     }
 
-    changeIsdebugedStatus(routeID, status){
+    changeRouteIsdebugedStatus(routeID, status){
         if (status === true || status === false){
             this.mainMap.get(routeID).attributes.isdebuged = status;
         } 
         else {
-            alt.log('Некорректное использование changeIsdebugedStatus');
+            alt.log('Некорректное использование changeRouteIsdebugedStatus');
             alt.log('status может быть только true или false');
             return;
         }

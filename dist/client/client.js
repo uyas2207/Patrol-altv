@@ -161,6 +161,75 @@ class DebugVisuals {
 
 /***/ }),
 
+/***/ "./client/classes/pedDebugManager.js":
+/*!*******************************************!*\
+  !*** ./client/classes/pedDebugManager.js ***!
+  \*******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   PedDebugManager: () => (/* binding */ PedDebugManager)
+/* harmony export */ });
+/* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
+/* provided dependency */ var drawNotification = __webpack_require__(/*! ./client/utilities/utilities.js */ "./client/utilities/utilities.js")["drawNotification"];
+// pedDebugManager.js
+
+class PedDebugManager {
+  constructor(debugVisuals, pedManager, routeManager) {
+    this.pedManager = pedManager;
+    this.routeManager = routeManager;
+    this.debugVisuals = debugVisuals;
+    this.singleDebug = new Map(); // хранит everytick для визуального отображения у конкретных ped
+  }
+  pedDebug(PedID) {
+    var ped = this.pedManager.getPed(PedID);
+    if (!ped) {
+      drawNotification("Ped=".concat(PedID, " \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D"));
+      return;
+    }
+    if (ped.isdebuged === false) {
+      this.pedDebugTurnOn(PedID);
+    } else {
+      this.pedDebugTurnOff(PedID);
+    }
+  }
+  pedDebugTurnOn(PedID) {
+    var TempPed = this.pedManager.getPed(PedID);
+    if (TempPed.asignedRoute !== null) {
+      this.routeManager.changeRouteIsdebugedStatus(TempPed.asignedRoute, true);
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('route.isdebuged = true, не будет повторяться в общем debug');
+    }
+    this.pedManager.changePedIsdebugedStatus(TempPed.entity.id, true);
+    var timerID = alt_client__WEBPACK_IMPORTED_MODULE_0__.everyTick(() => {
+      var ped = this.pedManager.getPed(PedID);
+      this.debugVisuals.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.pos);
+      if (ped.asignedRoute !== null) {
+        var data = this.routeManager.getRoute(ped.asignedRoute);
+        this.debugVisuals.connectNodesLine(data.nodes, data.attributes);
+        this.debugVisuals.drawRouteMarkers(data.nodes);
+      }
+    });
+    this.singleDebug.set(TempPed.entity.id, timerID);
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('this.singleDebug', this.singleDebug);
+  }
+  pedDebugTurnOff(PedID) {
+    var ped = this.pedManager.getPed(PedID);
+    var timerId = this.singleDebug.get(ped.entity.id);
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.clearEveryTick(timerId);
+    this.singleDebug.delete(ped.entity.id);
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('this.singleDebug', this.singleDebug);
+    this.pedManager.changePedIsdebugedStatus(ped.entity.id, false);
+    if (ped.asignedRoute !== null) {
+      this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, false);
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('route.isdebuged = false => будет повторяться в общем debug');
+    }
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("pedDebugTurnOff");
+  }
+}
+
+/***/ }),
+
 /***/ "./client/classes/pedManager.js":
 /*!**************************************!*\
   !*** ./client/classes/pedManager.js ***!
@@ -174,16 +243,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
 /* harmony import */ var natives__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! natives */ "natives");
 /* provided dependency */ var drawNotification = __webpack_require__(/*! ./client/utilities/utilities.js */ "./client/utilities/utilities.js")["drawNotification"];
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
 
 class PedManager {
-  constructor(routeManager, debugVisuals, defaultClientConfig) {
+  constructor(routeManager, defaultClientConfig) {
     this.mainPedMap = new Map(); // хранит данные о ped (ped, asignedRoute, isdebuged)
     this.routeManager = routeManager;
-    this.debugVisuals = debugVisuals;
-    this.singleDebug = new Map(); // хранит everytick для визульного отображения у конкретных ped
     this.defaultConfig = defaultClientConfig;
   }
 
@@ -221,11 +293,11 @@ class PedManager {
     // проверка существования маршрута
     if (this.routeManager.hasRoute(routeID) === false) {
       drawNotification("Route \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D \u043D\u0430 \u043A\u043B\u0438\u0435\u043D\u0442");
-      drawNotification("\u0427\u0442\u043E \u0431\u044B \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C Route \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u043A\u043E\u043C\u0430\u043D\u0434\u0443 /load");
+      drawNotification("\u0427\u0442\u043E \u0431\u044B \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C Route \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u043A\u043E\u043C\u0430\u043D\u0434\u0443 /path load");
       return;
     }
     var route = this.routeManager.getRoute(routeID);
-    var ped = this.getPed(pedId);
+    var ped = this.mainPedMap.get(pedId);
     if (!ped) {
       drawNotification("Ped ".concat(pedId, " \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D"));
       return;
@@ -249,14 +321,13 @@ class PedManager {
 
     //в случае когда ped был со включенным debug и ему назначили маршрут нужно сделать значение маршртуа isdebuged в routeManager
     if (ped.isdebuged === true) {
-      this.routeManager.changeIsdebugedStatus(ped.asignedRoute, true);
+      this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, true);
     }
     //route.attributes.asigned = pedId;
   }
 
   //проверяет всю mainPedMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать asignedRoute = null;
   clearPedAssignment(routeID) {
-    //pedId
     // обновление asignedRoute в mainPedMap
     this.mainPedMap.forEach(value => {
       if (value.asignedRoute === routeID) {
@@ -305,7 +376,7 @@ class PedManager {
       natives__WEBPACK_IMPORTED_MODULE_1__.deletePatrolRoute("miss_".concat(data.attributes.name));
       this.routeManager.unAsignRouteFromPed(ped.asignedRoute, pedID);
       if (data.attributes.isdebuged === true) {
-        this.routeManager.changeIsdebugedStatus(ped.asignedRoute, false);
+        this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, false);
         //data.attributes.isdebuged = false;
 
         alt_client__WEBPACK_IMPORTED_MODULE_0__.log('route.isdebuged = false => будет повторяться в общем debug');
@@ -315,48 +386,6 @@ class PedManager {
     } else {
       drawNotification("Ped ".concat(pedID, " \u043D\u0435 \u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D \u043D\u0438\u043A\u0430\u043A\u043E\u0439 \u043C\u0430\u0440\u0448\u0440\u0443\u0442"));
     }
-  }
-  pedDebug(arg) {
-    var ped = this.mainPedMap.get(arg);
-    if (!ped) {
-      drawNotification("Ped=".concat(arg, " \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D"));
-      return;
-    }
-    if (ped.isdebuged === false) {
-      this.pedDebugTurnOn(ped);
-    } else {
-      this.pedDebugTurnOff(ped);
-    }
-  }
-  pedDebugTurnOn(ped) {
-    if (ped.asignedRoute !== null) {
-      this.routeManager.changeIsdebugedStatus(ped.asignedRoute, true);
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('route.isdebuged = true, не будет повторяться в общем debug');
-    }
-    ped.isdebuged = true;
-    var timerID = alt_client__WEBPACK_IMPORTED_MODULE_0__.everyTick(() => {
-      this.debugVisuals.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.pos);
-      if (ped.asignedRoute !== null) {
-        var data = this.routeManager.getRoute(ped.asignedRoute);
-        this.debugVisuals.connectNodesLine(data.nodes, data.attributes);
-        this.debugVisuals.drawRouteMarkers(data.nodes);
-      }
-    });
-    this.singleDebug.set(ped.entity.id, timerID);
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('this.singleDebug', this.singleDebug);
-  }
-  pedDebugTurnOff(ped) {
-    var timerId = this.singleDebug.get(ped.entity.id);
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.clearEveryTick(timerId);
-    this.singleDebug.delete(ped.entity.id);
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('this.singleDebug', this.singleDebug);
-    //            this.singleDebug = null;
-    ped.isdebuged = false;
-    if (ped.asignedRoute !== null) {
-      this.routeManager.changeIsdebugedStatus(ped.asignedRoute, false);
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('route.isdebuged = false => будет повторяться в общем debug');
-    }
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("pedDebugTurnOff");
   }
 
   //выводит всю информацию о ped
@@ -385,12 +414,26 @@ class PedManager {
   }
 
   //доп методы для вызова из других классов
-
+  /*
+      getPed(pedId) {
+          return this.mainPedMap.get(pedId);
+      }
+  */
   getPed(pedId) {
-    return this.mainPedMap.get(pedId);
+    var ped = this.mainPedMap.get(pedId);
+    return _objectSpread({}, ped); // возвращает копию
   }
   getAllPeds() {
     return this.mainPedMap;
+  }
+  changePedIsdebugedStatus(pedId, status) {
+    if (status === true || status === false) {
+      this.mainPedMap.get(pedId).isdebuged = status;
+    } else {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Некорректное использование changePedIsdebugedStatus');
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('status может быть только true или false');
+      return;
+    }
   }
 
   // перебор всех педов с колбэком
@@ -633,11 +676,11 @@ class RouteManager {
   getRoute(routeID) {
     return this.mainMap.get(routeID);
   }
-  changeIsdebugedStatus(routeID, status) {
+  changeRouteIsdebugedStatus(routeID, status) {
     if (status === true || status === false) {
       this.mainMap.get(routeID).attributes.isdebuged = status;
     } else {
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Некорректное использование changeIsdebugedStatus');
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Некорректное использование changeRouteIsdebugedStatus');
       alt_client__WEBPACK_IMPORTED_MODULE_0__.log('status может быть только true или false');
       return;
     }
@@ -830,6 +873,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _classes_pedManager_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./classes/pedManager.js */ "./client/classes/pedManager.js");
 /* harmony import */ var _classes_debugManager_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./classes/debugManager.js */ "./client/classes/debugManager.js");
 /* harmony import */ var _classes_debugVisuals_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./classes/debugVisuals.js */ "./client/classes/debugVisuals.js");
+/* harmony import */ var _classes_pedDebugManager_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./classes/pedDebugManager.js */ "./client/classes/pedDebugManager.js");
+
 
 
 
@@ -841,9 +886,10 @@ class PatrolClient {
     this.debugVisuals = new _classes_debugVisuals_js__WEBPACK_IMPORTED_MODULE_5__.DebugVisuals(_config_clientConfig_js__WEBPACK_IMPORTED_MODULE_1__.defaultClientConfig); //класс для визуального отображения debug
 
     this.routeManager = new _classes_routeManager_js__WEBPACK_IMPORTED_MODULE_2__.RouteManager(_config_clientConfig_js__WEBPACK_IMPORTED_MODULE_1__.defaultClientConfig);
-    this.pedManager = new _classes_pedManager_js__WEBPACK_IMPORTED_MODULE_3__.PedManager(this.routeManager, this.debugVisuals, _config_clientConfig_js__WEBPACK_IMPORTED_MODULE_1__.defaultClientConfig);
+    this.pedManager = new _classes_pedManager_js__WEBPACK_IMPORTED_MODULE_3__.PedManager(this.routeManager, _config_clientConfig_js__WEBPACK_IMPORTED_MODULE_1__.defaultClientConfig);
     this.debugManager = new _classes_debugManager_js__WEBPACK_IMPORTED_MODULE_4__.DebugManager(this.pedManager, this.routeManager, this.debugVisuals);
     this.routeManager.setPedManager(this.pedManager);
+    this.pedDebugManager = new _classes_pedDebugManager_js__WEBPACK_IMPORTED_MODULE_6__.PedDebugManager(this.debugVisuals, this.pedManager, this.routeManager);
     this.init();
   }
   init() {
@@ -878,7 +924,8 @@ class PatrolClient {
     //включает debug для конкретного ped (его область видимости и его маршрут если у него есть asignedRoute)
     alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('patrol:pedDebug', arg => {
       alt_client__WEBPACK_IMPORTED_MODULE_0__.log("ped ".concat(arg, " Debug"));
-      this.pedManager.pedDebug(arg);
+      this.pedDebugManager.pedDebug(arg);
+      //          this.pedManager.pedDebug(arg);
     });
 
     //отображать debug, после команды с сервера
