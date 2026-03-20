@@ -72,6 +72,10 @@ return [
             path.resolve(__dirname, 'client/utilities/utilities.js'),
             'drawNotification'
           ],
+          eventBus: [
+            path.resolve(__dirname, 'client/classes/eventBus.js'),
+            'eventBus'
+          ],
         }),
       ],
      devtool: false

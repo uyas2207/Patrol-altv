@@ -6,17 +6,32 @@ import * as native from 'natives';
 export class RouteManager {
     constructor(defaultClientConfig) {
         this.defaultConfig = defaultClientConfig;
-        this.pedManager = null;
+        //this.pedManager = null;
 
         this.currentRouteMap = new Map();        // текущий маршрут
         this.mainMap = new Map();                // все маршруты на клиенте
         this.currentRouteAttributes = null;      //в буддущем массив в котором будут доп знаечния для текщуего массива (looped, asigned, isdebuged)
+        
+        //подписывается на ивенты приходящие из других классов с помощью eventBus
+        this.registerEventListeners();
     }
+
+    registerEventListeners(){
+        
+        eventBus.on('ped:routeAssigned', ({ routeID, pedId }) => {
+            this.asignRouteToPed(routeID, pedId);
+        });
+
+        eventBus.on('ped:routeUnassigned', ({ routeID, pedID }) => {
+            this.unAsignRouteFromPed(routeID, pedID);
+        });
+    }
+/*
     //получает pedManager после его успешной инициализацити в PatrolClient
     setPedManager(pedManager){
         this.pedManager = pedManager;
     }
-
+*/
     //получает route с сервера и добавляет его в mainMap, если такой route еще не добавлен
     initRoutes(route){
         if (this.mainMap.has(route.id)) {
@@ -166,7 +181,8 @@ export class RouteManager {
         this.currentRouteAttributes = null;
         this.currentRouteMap.clear();
         //так как произошел deletePatrolRoute ped больше не назначен маршрут и нужно сделать asignedRoute = null если сущуствовал ped с таким маршрутом
-        this.pedManager.clearPedAssignment(tempID);
+        eventBus.emit('route:cleared', tempID);
+        //this.pedManager.clearPedAssignment(tempID);
     }
 
     //отправляет на сервер текущий маршрут для сохранения его в общий список маршрутов в routePoints.json
@@ -230,7 +246,7 @@ export class RouteManager {
     //смена статуса asigned, после смены ped.asignedRoute route в классе PedManager
     asignRouteToPed(routeID, pedId){
         if(this.mainMap.has(routeID)){
-            const route = this.getRoute(routeID);
+            const route = this.mainMap.get(routeID);
             route.attributes.asigned = pedId;
         }
         else{
@@ -239,18 +255,19 @@ export class RouteManager {
     }
     //смена статуса asigned, после смены ped.asignedRoute route в классе PedManager
     unAsignRouteFromPed(routeID, pedId){
-        if(this.mainMap.has(routeID)){
-            const route = this.getRoute(routeID);
-            if (route.attributes.asigned === pedId){
-                route.attributes.asigned = null;
-            }
-            else{
-                alt.log(`Ped: ${pedID} не был назначен routeID: ${routeID}`);
-            }
+        if(!this.mainMap.has(routeID)){
+            alt.log('Передан неверный routeID в unAsignRouteFromPed');
+            return;
+        }
+        
+        const route = this.mainMap.get(routeID);
+        if (route.attributes.asigned === pedId){
+            route.attributes.asigned = null;
         }
         else{
-            alt.log('Передан неверный routeID в unAsignRouteFromPed');
+            alt.log(`Ped: ${pedID} не был назначен routeID: ${routeID}`);
         }
+        
     }
 
     // перебор всех маршрутов с колбэком

@@ -8,6 +8,12 @@ export class PedManager {
         this.mainPedMap = new Map();    // хранит данные о ped (ped, asignedRoute, isdebuged)
         this.routeManager = routeManager;
         this.defaultConfig = defaultClientConfig;
+
+        eventBus.on('route:cleared', (routeID) => {
+            alt.log('PedManageron route:cleared');
+            this.clearPedAssignment(routeID);
+        });
+        
     }
 
     //изменяет данные о ped, так как при вылете из стрим зоны и повторном влете у ped меняется большая часть данных и нужно перезаписать старые неактуальные данные о ped
@@ -36,6 +42,16 @@ export class PedManager {
         });
         const data = this.mainPedMap.get(entity.id);
         alt.log(`entity id: ${data.entity.id}, entity scriptID: ${data.entity.scriptID}, asignedRoute: ${data.asignedRoute}`);
+    }
+
+    //проверяет всю mainPedMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать asignedRoute = null;
+    clearPedAssignment(routeID) {
+        // обновление asignedRoute в mainPedMap
+        this.mainPedMap.forEach((value) => {
+            if(value.asignedRoute === routeID){ // && value.entity.id !== pedId
+                value.asignedRoute = null;
+            }
+        });
     }
 
     asignRouteToPed(pedId, routeID) {
@@ -69,27 +85,17 @@ export class PedManager {
         //запоминает какой маршрту был назначен для этого ped
         ped.asignedRoute = routeID;
         //изменяет в классе routeManager значение asigned для необходимого маршрута
-        this.routeManager.asignRouteToPed(routeID, pedId);
+        eventBus.emit('ped:routeAssigned', { routeID, pedId });
+        //this.routeManager.asignRouteToPed(routeID, pedId);
 
         //в случае когда ped был со включенным debug и ему назначили маршрут нужно сделать значение маршртуа isdebuged в routeManager
         if (ped.isdebuged === true) {
             this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, true);
         }
-        //route.attributes.asigned = pedId;
-    }
-
-    //проверяет всю mainPedMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать asignedRoute = null;
-    clearPedAssignment(routeID) {
-        // обновление asignedRoute в mainPedMap
-        this.mainPedMap.forEach((value) => {
-            if(value.asignedRoute === routeID){ // && value.entity.id !== pedId
-                value.asignedRoute = null;
-            }
-        });
     }
 
     //назначение маршрута ped
-    async asignCurrentRouteToPed(ped, attributes, nodes) {
+    asignCurrentRouteToPed(ped, attributes, nodes) {
         if ( nodes.size === 0 ){
             drawNotification(`Нельзя назначить пустой маршрут для патрулирования`);
             return;
@@ -141,7 +147,9 @@ export class PedManager {
         if (ped.asignedRoute !== null ){    
             const data = this.routeManager.getRoute(ped.asignedRoute);
             native.deletePatrolRoute(`miss_${data.attributes.name}`);
-            this.routeManager.unAsignRouteFromPed(ped.asignedRoute, pedID);
+            const routeID = ped.asignedRoute;
+            eventBus.emit('ped:routeUnassigned', { routeID, pedID });
+            //this.routeManager.unAsignRouteFromPed(ped.asignedRoute, pedID);
             
             if (data.attributes.isdebuged === true){
                 this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, false);
@@ -184,14 +192,9 @@ export class PedManager {
     }
 
     //доп методы для вызова из других классов
-/*
+
     getPed(pedId) {
         return this.mainPedMap.get(pedId);
-    }
-*/
-    getPed(pedId) {
-        const ped = this.mainPedMap.get(pedId);
-        return { ...ped }; // возвращает копию
     }
 
     getAllPeds() {

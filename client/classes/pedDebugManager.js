@@ -25,18 +25,16 @@ export class PedDebugManager {
     }
 
     pedDebugTurnOn(PedID){
-        const TempPed = this.pedManager.getPed(PedID);
+        const ped = this.pedManager.getPed(PedID);
 
-        if( TempPed.asignedRoute !== null ){
-            this.routeManager.changeRouteIsdebugedStatus(TempPed.asignedRoute, true);
+        if( ped.asignedRoute !== null ){
+            this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, true);
             alt.log('route.isdebuged = true, не будет повторяться в общем debug');
         }
 
-        this.pedManager.changePedIsdebugedStatus(TempPed.entity.id, true);
+        this.pedManager.changePedIsdebugedStatus(ped.entity.id, true);
 
         const timerID = alt.everyTick(() => {
-            const ped = this.pedManager.getPed(PedID);
-            
             this.debugVisuals.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt.Player.local.pos);
 
             if(ped.asignedRoute !== null){
@@ -45,7 +43,7 @@ export class PedDebugManager {
                 this.debugVisuals.drawRouteMarkers(data.nodes);
             }
         });
-        this.singleDebug.set(TempPed.entity.id, timerID);
+        this.singleDebug.set(ped.entity.id, timerID);
         alt.log('this.singleDebug', this.singleDebug);
     }
 

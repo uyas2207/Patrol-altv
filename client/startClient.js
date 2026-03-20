@@ -18,7 +18,7 @@ class PatrolClient {
         this.pedManager = new PedManager(this.routeManager, defaultClientConfig);
         this.debugManager = new DebugManager(this.pedManager, this.routeManager, this.debugVisuals);
     
-        this.routeManager.setPedManager(this.pedManager);
+        //this.routeManager.setPedManager(this.pedManager);
 
         this.pedDebugManager = new PedDebugManager(this.debugVisuals, this.pedManager, this.routeManager);
 
