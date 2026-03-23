@@ -1,5 +1,7 @@
 import * as alt from 'alt-client';
 
+import {drawNotification} from '@utilities';
+
 export class DebugManager {
     constructor(pedManager, routeManager, debugVisuals) {
         this.pedManager = pedManager;

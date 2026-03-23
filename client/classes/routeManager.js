@@ -2,6 +2,7 @@ import * as alt from 'alt-client';
 
 import * as native from 'natives';
 
+import {drawNotification} from '@utilities';
 
 export class RouteManager {
     constructor(defaultClientConfig) {
@@ -27,7 +28,7 @@ export class RouteManager {
             this.unAsignRouteFromPed(routeID, pedID);
         });
     }
-    
+
     //получает route с сервера и добавляет его в mainMap, если такой route еще не добавлен
     initRoutes(route){
         if (this.mainMap.has(route.id)) {

@@ -2,6 +2,7 @@ import * as alt from 'alt-client';
 
 import * as native from 'natives';
 
+import {drawNotification} from '@utilities';
 
 export class PedManager {
     constructor(routeManager, defaultClientConfig) {

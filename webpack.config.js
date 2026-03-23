@@ -49,11 +49,11 @@ return [
       },
       resolve: {
         extensions: ['.js'],
-/*
+
         alias: {
-          '@classes': path.resolve(__dirname, 'client/classes')
+          '@utilities': path.resolve(__dirname, 'client/utilities/utilities.js')
         }
-*/
+
       },
       externalsType: 'module',
       externals: {
@@ -66,6 +66,7 @@ return [
         minimize: isProduction,
         splitChunks: false
       },
+/*
       plugins: [
         new webpack.ProvidePlugin({
           drawNotification: [
@@ -74,6 +75,7 @@ return [
           ],
         }),
       ],
+*/
      devtool: false
     },
 
