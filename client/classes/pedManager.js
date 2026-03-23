@@ -9,7 +9,7 @@ export class PedManager {
         this.routeManager = routeManager;
         this.defaultConfig = defaultClientConfig;
 
-        eventBus.on('route:cleared', (routeID) => {
+        alt.on('route:cleared', (routeID) => {
             alt.log('PedManageron route:cleared');
             this.clearPedAssignment(routeID);
         });
@@ -85,7 +85,7 @@ export class PedManager {
         //запоминает какой маршрту был назначен для этого ped
         ped.asignedRoute = routeID;
         //изменяет в классе routeManager значение asigned для необходимого маршрута
-        eventBus.emit('ped:routeAssigned', { routeID, pedId });
+        alt.emit('ped:routeAssigned', { routeID, pedId });
         //this.routeManager.asignRouteToPed(routeID, pedId);
 
         //в случае когда ped был со включенным debug и ему назначили маршрут нужно сделать значение маршртуа isdebuged в routeManager
@@ -148,7 +148,7 @@ export class PedManager {
             const data = this.routeManager.getRoute(ped.asignedRoute);
             native.deletePatrolRoute(`miss_${data.attributes.name}`);
             const routeID = ped.asignedRoute;
-            eventBus.emit('ped:routeUnassigned', { routeID, pedID });
+            alt.emit('ped:routeUnassigned', { routeID, pedID });
             //this.routeManager.unAsignRouteFromPed(ped.asignedRoute, pedID);
             
             if (data.attributes.isdebuged === true){
