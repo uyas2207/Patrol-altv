@@ -203,41 +203,32 @@ class PatrolCommands {
     this.routeStorage = routeStorage;
     this.pedManager = pedManager;
     this.debug = debug;
-    this.commands = {
-      //весь список команд
-      path: {
-        info: this.routeInfoCommand.bind(this),
-        //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.routePointsMap + currentRouteAttributes
-        switch: this.switchCommand.bind(this),
-        //меняет текщуий маршрут на клиенте (для коректной работы addnode dellnode т.к добавление и удаление нод происходит с текущим маршрутом)
-
-        debug: this.debugCommand.bind(this),
-        //отображает общий debug, все переданные на клиент маршруты и все области видимости ped
-        addnode: this.addnodeCommand.bind(this),
-        //добавляет в текущий маршрут точку на которой стоит игрок
-        dellnode: this.dellnodeCommand.bind(this),
-        //удаляет из текщуего маршрута точку с указаным в команде номером
-        clear: this.clearCommand.bind(this),
-        //очищает текущий маршрут на клиенте
-        save: this.saveCommand.bind(this),
-        //запрашивает с клиента его текущий маршрут для сохранения в общий список в routePoints.json
-        load: this.loadCommand.bind(this),
-        //передает на клиент маршрут с названием указанным в команде из routePoints.json
-        create: this.createCommand.bind(this) //создает новый маршрут в файле routePoints.json и передает его на клиент
-      },
-      ped: {
-        info: this.pedinfoCommand.bind(this),
-        //выводит всю информацию о ped на клиенте (scriptID, netOwner, dimension, remoteID ...)
-        map: this.pedmapCommand.bind(this),
-        //выводит всю информацию о ped из клиентской map mainPedMap (asignedRoute, isdebuged)
-
-        asign: this.asignCommand.bind(this),
-        //начзначет ped маршрут
-        debug: this.peddebugCommand.bind(this),
-        //отображает debug для конкретного ped, его облапсть видимости и маршрут который ему назначен если такой есть
-        stop: this.stopCommand.bind(this) //отменяет ped маршрут для патруля у ped
-      }
-    };
+    this.commands = {};
+    /*
+            this.commands = {   //весь список команд
+                path: {
+                    info: this.routeInfoCommand.bind(this),    //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.routePointsMap + currentRouteAttributes
+                    switch: this.switchCommand.bind(this),     //меняет текщуий маршрут на клиенте (для коректной работы addnode dellnode т.к добавление и удаление нод происходит с текущим маршрутом)
+    
+                    debug: this.debugCommand.bind(this),       //отображает общий debug, все переданные на клиент маршруты и все области видимости ped
+                    addnode: this.addnodeCommand.bind(this),   //добавляет в текущий маршрут точку на которой стоит игрок
+                    dellnode: this.dellnodeCommand.bind(this), //удаляет из текщуего маршрута точку с указаным в команде номером
+                    clear: this.clearCommand.bind(this),       //очищает текущий маршрут на клиенте
+                    save: this.saveCommand.bind(this),         //запрашивает с клиента его текущий маршрут для сохранения в общий список в routePoints.json
+                    load: this.loadCommand.bind(this),         //передает на клиент маршрут с названием указанным в команде из routePoints.json
+                    create: this.createCommand.bind(this)      //создает новый маршрут в файле routePoints.json и передает его на клиент
+                },
+                ped: {
+                    info: this.pedinfoCommand.bind(this),      //выводит всю информацию о ped на клиенте (scriptID, netOwner, dimension, remoteID ...)
+                    map: this.pedmapCommand.bind(this),        //выводит всю информацию о ped из клиентской map mainPedMap (asignedRoute, isdebuged)
+    
+                    asign: this.asignCommand.bind(this),       //начзначет ped маршрут
+                    debug: this.peddebugCommand.bind(this),    //отображает debug для конкретного ped, его облапсть видимости и маршрут который ему назначен если такой есть
+                    stop: this.stopCommand.bind(this)          //отменяет ped маршрут для патруля у ped
+                }
+            }
+    */
+    this.buildCommands();
   }
   registerCommands() {
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.registerCmd('path', (player, args) => {
@@ -269,32 +260,50 @@ class PatrolCommands {
       alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "/".concat(category, " ").concat(command));
     });
   }
+  buildCommands() {
+    var prefix = 'cmd_';
+    //запоминает все названия методов класса (берет их из прототипа класса)
+    Object.getOwnPropertyNames(Object.getPrototypeOf(this))
+    //ищет все методы котрые начинаются с нужного префикса
+    .filter(name => name.startsWith(prefix)).forEach(name => {
+      //разделяет все найденные name на category и subCommand (работает только если они разделены _)
+      var [category, subCommand] = name.slice(prefix.length).split('_');
+      if (!category || !subCommand) return;
+      //если это первый раз когда встречается такая категория создает такую категорию
+      if (!this.commands[category]) {
+        this.commands[category] = {};
+      }
+      //добавляет необходимую команду
+      this.commands[category][subCommand] = this[name].bind(this);
+    });
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.log('this.commands', this.commands);
+  }
 
   //создает новый маршрут в файле routePoints.json и передает его на клиент
-  createCommand(player, arg) {
+  cmd_path_create_Command(player, arg) {
     if (!this.checkArgumentsLength(player, arg, 1)) return;
     var name = String(arg);
     this.routeStorage.create(player, name);
   }
   //очищает текущий маршрут на клиенте
-  clearCommand(player) {
+  cmd_path_clear_Command(player) {
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:clearCurrentRoute');
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "\u0422\u0435\u043A\u0443\u0449\u0438\u0439 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0443\u0434\u0430\u043B\u0435\u043D \u043D\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0435");
   }
   //запрашивает с клиента его текущий маршрут для сохранения в общий список в routePoints.json
-  saveCommand(player) {
+  cmd_path_save_Command(player) {
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:askForRouteMap');
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log('save');
   }
   //передает на клиент маршрут с названием указанным в команде из routePoints.json
-  loadCommand(player, arg) {
+  cmd_path_load_Command(player, arg) {
     if (!this.checkArgumentsLength(player, arg, 1)) return;
     var name = String(arg);
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log('name в loadcomande', name);
     this.routeStorage.load(player, name);
   }
   //удаляет из текщуего маршрута точку с указаным в команде номером
-  dellnodeCommand(player, node_id) {
+  cmd_path_deleteNode_Command(player, node_id) {
     var result = this.checkNode(player, node_id); //result = node_id или false если введены некоректные данные для node_id
     //проверка !result не рабоатет, так как аргуменом может быть 0
     if (result === false) {
@@ -305,7 +314,7 @@ class PatrolCommands {
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "/dellNode ".concat(result));
   }
   //добавляет в текущий маршрут точку на которой стоит игрок
-  addnodeCommand(player, node_id) {
+  cmd_path_addNode_Command(player, node_id) {
     var result = this.checkNode(player, node_id); //result = node_id или false если введены некоректные данные для node_id
     //проверка !result не рабоатет, так как аргуменом может быть 0
     if (result === false) {
@@ -328,12 +337,12 @@ class PatrolCommands {
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "/addnode ".concat(result));
   }
   //отображает общий debug, все переданные на клиент маршруты и все области видимости ped
-  debugCommand(player) {
+  cmd_path_debug_Command(player) {
     this.debug.toggle(player);
   }
 
   //отменяет ped маршрут для патруля у ped
-  stopCommand(player, arg) {
+  cmd_ped_stop_Command(player, arg) {
     if (!this.checkArgumentsLength(player, arg, 1)) return;
     var pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
     if (!pedId) {
@@ -344,7 +353,7 @@ class PatrolCommands {
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "/ped stop ".concat(pedId));
   }
   //начзначет ped маршрут
-  asignCommand(player, arg) {
+  cmd_ped_asign_Command(player, arg) {
     if (!this.checkArgumentsLength(player, arg, 2)) return;
     var pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
     if (!pedId) {
@@ -362,7 +371,7 @@ class PatrolCommands {
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "/ped asign ".concat(pedId, " ").concat(name));
   }
   //меняет текщуий маршрут на клиенте (для коректной работы addnode dellnode т.к добавление и удаление нод происходит с текущим маршрутом)
-  switchCommand(player, arg) {
+  cmd_path_switch_Command(player, arg) {
     if (!this.checkArgumentsLength(player, arg, 1)) return;
     var name = String(arg[0]);
     var route = this.routeStorage.getRouteByName(name);
@@ -375,7 +384,7 @@ class PatrolCommands {
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "Switched current route to ".concat(name));
   }
   //отображает debug для конкретного ped, его облапсть видимости и маршрут который ему назначен если такой есть
-  peddebugCommand(player, arg) {
+  cmd_ped_debug_Command(player, arg) {
     if (!this.checkArgumentsLength(player, arg, 1)) return;
     var pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
     if (!pedId) {
@@ -385,7 +394,7 @@ class PatrolCommands {
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:pedDebug', pedId);
   }
   //выводит всю информацию о ped на клиенте (scriptID, netOwner, dimension, remoteID ...)
-  pedinfoCommand(player, arg) {
+  cmd_ped_info_Command(player, arg) {
     if (!this.checkArgumentsLength(player, arg, 1)) return;
     var pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
     if (!pedId) {
@@ -397,11 +406,11 @@ class PatrolCommands {
     alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "/ped info ".concat(pedId));
   }
   //выводит всю информацию о ped из клиентской map mainPedMap (asignedRoute, isdebuged)
-  pedmapCommand(player) {
+  cmd_ped_map_Command(player) {
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:pedMap');
   }
   //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.routePointsMap + currentRouteAttributes
-  routeInfoCommand(player) {
+  cmd_path_info_Command(player) {
     //   alt.log('arg = ', arg);
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'patrol:route');
   }

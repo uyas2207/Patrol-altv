@@ -9,7 +9,8 @@ export class PatrolCommands {
         this.routeStorage = routeStorage;
         this.pedManager =  pedManager;
         this.debug = debug;
-
+        this.commands = {};
+/*
         this.commands = {   //весь список команд
             path: {
                 info: this.routeInfoCommand.bind(this),    //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.routePointsMap + currentRouteAttributes
@@ -32,9 +33,11 @@ export class PatrolCommands {
                 stop: this.stopCommand.bind(this)          //отменяет ped маршрут для патруля у ped
             }
         }
+*/
+        this.buildCommands();
 
     }
-
+// убрать хардкод и брать 'path' и 'ped' из this.commands
     registerCommands(){
         chat.registerCmd('path', (player, args) => {
             this.executeCommand('path', player, args);
@@ -71,25 +74,45 @@ export class PatrolCommands {
         });
     }
 
+    buildCommands(){
+        const prefix = 'cmd_';
+        //запоминает все названия методов класса (берет их из прототипа класса)
+        Object.getOwnPropertyNames(Object.getPrototypeOf(this))
+        //ищет все методы котрые начинаются с нужного префикса
+        .filter(name => name.startsWith(prefix))
+        .forEach(name => {
+            //разделяет все найденные name на category и subCommand (работает только если они разделены _)
+            const [category, subCommand] = name.slice(prefix.length).split('_');
+            if (!category || !subCommand) return;
+            //если это первый раз когда встречается такая категория создает такую категорию
+            if (!this.commands[category]) {
+                this.commands[category] = {};
+            }
+            //добавляет необходимую команду
+            this.commands[category][subCommand] = this[name].bind(this);
+        });
+        alt.log('this.commands', this.commands );
+    }
+
     //создает новый маршрут в файле routePoints.json и передает его на клиент
-    createCommand(player, arg){
+    cmd_path_create_Command(player, arg){
         if (!this.checkArgumentsLength(player, arg, 1)) return;
 
         const name = String(arg); 
         this.routeStorage.create(player, name);
     }
     //очищает текущий маршрут на клиенте
-    clearCommand(player){
+    cmd_path_clear_Command(player){
         alt.emitClient(player, 'patrol:clearCurrentRoute');
         chat.send(player, `Текущий маршрут удален на клиенте`);
     }
     //запрашивает с клиента его текущий маршрут для сохранения в общий список в routePoints.json
-    saveCommand(player){
+    cmd_path_save_Command(player){
         alt.emitClient(player, 'patrol:askForRouteMap');
         alt.log('save');
     }
     //передает на клиент маршрут с названием указанным в команде из routePoints.json
-    loadCommand(player, arg){
+    cmd_path_load_Command(player, arg){
         if (!this.checkArgumentsLength(player, arg, 1)) return;
 
         const name = String(arg);
@@ -97,7 +120,7 @@ export class PatrolCommands {
         this.routeStorage.load(player, name);
     }
     //удаляет из текщуего маршрута точку с указаным в команде номером
-    dellnodeCommand(player, node_id){
+    cmd_path_deleteNode_Command(player, node_id){
         const result = (this.checkNode(player, node_id));   //result = node_id или false если введены некоректные данные для node_id
         //проверка !result не рабоатет, так как аргуменом может быть 0
         if (result === false){
@@ -108,7 +131,7 @@ export class PatrolCommands {
         chat.send(player, `/dellNode ${result}`);
     }
     //добавляет в текущий маршрут точку на которой стоит игрок
-    addnodeCommand(player, node_id){
+    cmd_path_addNode_Command(player, node_id){
         const result = (this.checkNode(player, node_id));   //result = node_id или false если введены некоректные данные для node_id
         //проверка !result не рабоатет, так как аргуменом может быть 0
         if (result === false){
@@ -132,12 +155,12 @@ export class PatrolCommands {
         chat.send(player, `/addnode ${result}`);
     }
     //отображает общий debug, все переданные на клиент маршруты и все области видимости ped
-    debugCommand(player){
+    cmd_path_debug_Command(player){
         this.debug.toggle(player);
     }
 
     //отменяет ped маршрут для патруля у ped
-    stopCommand(player, arg){
+    cmd_ped_stop_Command(player, arg){
         if (!this.checkArgumentsLength(player, arg, 1)) return;
 
         const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
@@ -150,7 +173,7 @@ export class PatrolCommands {
 
     }
     //начзначет ped маршрут
-    asignCommand(player, arg){
+    cmd_ped_asign_Command(player, arg){
         if (!this.checkArgumentsLength(player, arg, 2)) return;
 
         const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
@@ -170,7 +193,7 @@ export class PatrolCommands {
         chat.send(player, `/ped asign ${pedId} ${name}`);
     }
     //меняет текщуий маршрут на клиенте (для коректной работы addnode dellnode т.к добавление и удаление нод происходит с текущим маршрутом)
-    switchCommand(player, arg){
+    cmd_path_switch_Command(player, arg){
         if (!this.checkArgumentsLength(player, arg, 1)) return;
 
         const name = String(arg[0]);
@@ -184,7 +207,7 @@ export class PatrolCommands {
         chat.send(player, `Switched current route to ${name}`);
     }
     //отображает debug для конкретного ped, его облапсть видимости и маршрут который ему назначен если такой есть
-    peddebugCommand(player, arg){
+    cmd_ped_debug_Command(player, arg){
         if (!this.checkArgumentsLength(player, arg, 1)) return;
 
         const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
@@ -195,7 +218,7 @@ export class PatrolCommands {
         alt.emitClient(player, 'patrol:pedDebug', pedId);
     }
     //выводит всю информацию о ped на клиенте (scriptID, netOwner, dimension, remoteID ...)
-    pedinfoCommand(player, arg){
+    cmd_ped_info_Command(player, arg){
         if (!this.checkArgumentsLength(player, arg, 1)) return;
 
         const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
@@ -209,11 +232,11 @@ export class PatrolCommands {
         chat.send(player, `/ped info ${pedId}`);
     }
     //выводит всю информацию о ped из клиентской map mainPedMap (asignedRoute, isdebuged)
-    pedmapCommand(player){
+    cmd_ped_map_Command(player){
         alt.emitClient(player, 'patrol:pedMap');
     }
     //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.routePointsMap + currentRouteAttributes
-    routeInfoCommand(player){
+    cmd_path_info_Command(player){
      //   alt.log('arg = ', arg);
         alt.emitClient(player, 'patrol:route');
     }
