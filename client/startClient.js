@@ -7,13 +7,17 @@ import { PedManager } from './classes/pedManager.js';
 import { DebugManager } from './classes/debugManager.js';
 import { DebugVisuals } from './classes/debugVisuals.js';
 
+import { PatrolExecutor } from './classes/patrolExecutor.js';
+
 class PatrolClient {
     constructor() {
+
+        this.patrolExecutor = new PatrolExecutor(defaultClientConfig);
 
         this.debugVisuals = new DebugVisuals(defaultClientConfig); //класс для визуального отображения debug
 
         this.routeManager = new RouteManager(defaultClientConfig);
-        this.pedManager = new PedManager(this.routeManager, defaultClientConfig);
+        this.pedManager = new PedManager(this.routeManager, this.patrolExecutor, defaultClientConfig);
         this.debugManager = new DebugManager(this.pedManager, this.routeManager, this.debugVisuals);
     
         //this.routeManager.setPedManager(this.pedManager);

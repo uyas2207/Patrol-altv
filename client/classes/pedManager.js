@@ -5,9 +5,10 @@ import * as native from 'natives';
 import {drawNotification} from '@utilities';
 
 export class PedManager {
-    constructor(routeManager, defaultClientConfig) {
+    constructor(routeManager, patrolExecutor, defaultClientConfig) {
         this.mainPedMap = new Map();    // хранит данные о ped (ped, asignedRoute, isdebuged)
         this.routeManager = routeManager;
+        this.patrolExecutor = patrolExecutor;
         this.defaultConfig = defaultClientConfig;
 
         alt.on('route:cleared', (routeID) => {
@@ -30,7 +31,7 @@ export class PedManager {
                 const route = this.routeManager.getRoute(data.asignedRoute);
                 //const route = this.routeManager.mainMap.get(data.asignedRoute);
                 await new Promise(resolve => alt.setTimeout(resolve, 1000));    //setTimeout что бы ped успел инициализироваться полностью, получить netOwner и мог выполнять маршрут
-                this.asignCurrentRouteToPed(data.entity, route.attributes, route.nodes);
+                this.patrolExecutor.asignCurrentRouteToPed(data.entity, route.attributes, route.nodes);
                 alt.log(`Ped ${data.entity.id}, заново asigned прошлый route ${data.asignedRoute}`);
             }
             return;
@@ -75,7 +76,7 @@ export class PedManager {
         alt.log('ped:', JSON.stringify(ped));
 
         // назначение маршртуа ped
-        this.asignCurrentRouteToPed(ped.entity, route.attributes, route.nodes);
+        this.patrolExecutor.asignCurrentRouteToPed(ped.entity, route.attributes, route.nodes);
 
         //так как asignCurrentRouteToPed не позволяет делать один и тот же маршрут разным ped (делает в начале deletePatrolRoute) 
         //нужно после выполнения asignCurrentRouteToPed очищать в map значения asignedRoute такие же как routeID, так как этим ped больше не назначен этот маршрут
@@ -93,53 +94,6 @@ export class PedManager {
         if (ped.isdebuged === true) {
             this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, true);
         }
-    }
-
-    //назначение маршрута ped
-    asignCurrentRouteToPed(ped, attributes, nodes) {
-        if ( nodes.size === 0 ){
-            drawNotification(`Нельзя назначить пустой маршрут для патрулирования`);
-            return;
-        }
-        native.deletePatrolRoute(`miss_${attributes.name}`);
-
-            //cоздает маршрут
-        native.openPatrolRoute(`miss_${attributes.name}`);
-
-            nodes.forEach((current) => {
-                native.addPatrolRouteNode(
-                    current.index,
-                    this.defaultConfig.animation,
-                    current.position.x,
-                    current.position.y,
-                    current.position.z,
-                    current.rotation.x,
-                    current.rotation.y,
-                    current.rotation.z,
-                    current.waitTime
-                );
-            });
-
-
-        const first = nodes.values().next().value;
-        let prev = null;
-
-        nodes.forEach((current) => {
-            if (current !== first) {
-                native.addPatrolRouteLink(prev.index, current.index);
-            }
-            prev = current;
-        });
-
-        if (attributes.looped) {
-            native.addPatrolRouteLink(prev.index, first.index);
-        }
-
-        native.closePatrolRoute();
-        native.createPatrolRoute();
-
-        native.taskPatrol(ped, `miss_${attributes.name}`, 0, false, true);
-        alt.log(`Назначен патруль ${attributes.name} для ped.id ${ped.id}, ped.scriptID ${ped.scriptID}`);
     }
 
     pedStop(pedID){
@@ -166,7 +120,7 @@ export class PedManager {
             drawNotification(`Ped ${pedID} не назначен никакой маршрут`);
         }
     }
-    
+
     //выводит всю информацию о ped
     pedInfoCommand(arg){
         const data = this.mainPedMap.get(arg);

@@ -20,7 +20,6 @@ export class RouteManager {
     registerEventListeners(){
         
         alt.on('ped:routeAssigned', ({ routeID, pedId }) => {
-            alt.log();
             this.asignRouteToPed(routeID, pedId);
         });
 
