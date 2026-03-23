@@ -10,41 +10,36 @@ export class PatrolCommands {
         this.pedManager =  pedManager;
         this.debug = debug;
         this.commands = {};
-/*
-        this.commands = {   //весь список команд
-            path: {
-                info: this.routeInfoCommand.bind(this),    //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.routePointsMap + currentRouteAttributes
-                switch: this.switchCommand.bind(this),     //меняет текщуий маршрут на клиенте (для коректной работы addnode dellnode т.к добавление и удаление нод происходит с текущим маршрутом)
 
-                debug: this.debugCommand.bind(this),       //отображает общий debug, все переданные на клиент маршруты и все области видимости ped
-                addnode: this.addnodeCommand.bind(this),   //добавляет в текущий маршрут точку на которой стоит игрок
-                dellnode: this.dellnodeCommand.bind(this), //удаляет из текщуего маршрута точку с указаным в команде номером
-                clear: this.clearCommand.bind(this),       //очищает текущий маршрут на клиенте
-                save: this.saveCommand.bind(this),         //запрашивает с клиента его текущий маршрут для сохранения в общий список в routePoints.json
-                load: this.loadCommand.bind(this),         //передает на клиент маршрут с названием указанным в команде из routePoints.json
-                create: this.createCommand.bind(this)      //создает новый маршрут в файле routePoints.json и передает его на клиент
-            },
-            ped: {
-                info: this.pedinfoCommand.bind(this),      //выводит всю информацию о ped на клиенте (scriptID, netOwner, dimension, remoteID ...)
-                map: this.pedmapCommand.bind(this),        //выводит всю информацию о ped из клиентской map mainPedMap (asignedRoute, isdebuged)
-
-                asign: this.asignCommand.bind(this),       //начзначет ped маршрут
-                debug: this.peddebugCommand.bind(this),    //отображает debug для конкретного ped, его облапсть видимости и маршрут который ему назначен если такой есть
-                stop: this.stopCommand.bind(this)          //отменяет ped маршрут для патруля у ped
-            }
-        }
-*/
         this.buildCommands();
-
     }
-// убрать хардкод и брать 'path' и 'ped' из this.commands
-    registerCommands(){
-        chat.registerCmd('path', (player, args) => {
-            this.executeCommand('path', player, args);
+
+    buildCommands(){
+        const prefix = 'cmd_';
+        //запоминает все названия методов класса (берет их из прототипа класса)
+        Object.getOwnPropertyNames(Object.getPrototypeOf(this))
+        //ищет все методы котрые начинаются с нужного префикса
+        .filter(name => name.startsWith(prefix))
+        .forEach(name => {
+            //разделяет все найденные name на category и subCommand (работает только если они разделены _)
+            const [category, subCommand] = name.slice(prefix.length).split('_');
+            if (!category || !subCommand) return;
+            //если это первый раз когда встречается такая категория создает такую категорию
+            if (!this.commands[category]) {
+                this.commands[category] = {};
+            }
+            //добавляет необходимую команду
+            this.commands[category][subCommand] = this[name].bind(this);
         });
-        
-        chat.registerCmd('ped', (player, args) => {
-            this.executeCommand('ped', player, args);
+        alt.log('this.commands', this.commands );
+    }
+
+    
+    registerCommands(){    
+        Object.keys(this.commands).forEach(category => {
+            chat.registerCmd(category, (player, args) => {
+                this.executeCommand(category, player, args);
+            });
         });
     }
 
@@ -72,26 +67,6 @@ export class PatrolCommands {
         Object.keys(this.commands[category]).forEach(command => {
             chat.send(player, `/${category} ${command}`);
         });
-    }
-
-    buildCommands(){
-        const prefix = 'cmd_';
-        //запоминает все названия методов класса (берет их из прототипа класса)
-        Object.getOwnPropertyNames(Object.getPrototypeOf(this))
-        //ищет все методы котрые начинаются с нужного префикса
-        .filter(name => name.startsWith(prefix))
-        .forEach(name => {
-            //разделяет все найденные name на category и subCommand (работает только если они разделены _)
-            const [category, subCommand] = name.slice(prefix.length).split('_');
-            if (!category || !subCommand) return;
-            //если это первый раз когда встречается такая категория создает такую категорию
-            if (!this.commands[category]) {
-                this.commands[category] = {};
-            }
-            //добавляет необходимую команду
-            this.commands[category][subCommand] = this[name].bind(this);
-        });
-        alt.log('this.commands', this.commands );
     }
 
     //создает новый маршрут в файле routePoints.json и передает его на клиент
