@@ -7,8 +7,6 @@ import { PedManager } from './classes/pedManager.js';
 import { DebugManager } from './classes/debugManager.js';
 import { DebugVisuals } from './classes/debugVisuals.js';
 
-import { PedDebugManager } from './classes/pedDebugManager.js';
-
 class PatrolClient {
     constructor() {
 
@@ -19,8 +17,6 @@ class PatrolClient {
         this.debugManager = new DebugManager(this.pedManager, this.routeManager, this.debugVisuals);
     
         //this.routeManager.setPedManager(this.pedManager);
-
-        this.pedDebugManager = new PedDebugManager(this.debugVisuals, this.pedManager, this.routeManager);
 
         this.init();
     }
@@ -60,7 +56,7 @@ class PatrolClient {
         alt.onServer('patrol:pedDebug', (arg) => {
             alt.log(`ped ${arg} Debug`);
             
-            this.pedDebugManager.pedDebug(arg);
+            this.debugManager.pedDebug(arg);
 //          this.pedManager.pedDebug(arg);
         });
 

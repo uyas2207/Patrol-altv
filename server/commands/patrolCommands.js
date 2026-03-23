@@ -31,7 +31,6 @@ export class PatrolCommands {
             //добавляет необходимую команду
             this.commands[category][subCommand] = this[name].bind(this);
         });
-        alt.log('this.commands', this.commands );
     }
 
     
