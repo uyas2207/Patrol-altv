@@ -32,7 +32,6 @@ class PatrolServer {
 
         alt.on('resourceStart', () => {
             this.pedManager.spawnDefaultNpcs();
-            this.patrolCommands.registerCommands();
         });
 
         alt.onClient('patrol:sendRouteMap', (player, clientRoute) => {
