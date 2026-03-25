@@ -71,7 +71,7 @@ export class DebugVisuals{
         const halfAngleRad = (this.viewAngle / 2) * Math.PI / 180;
         const stepAngleRad = (this.viewAngle * Math.PI / 180) / this.viewSectors;
 
-        const cansee = this.isPlayerInVisionCone(playerpos, headingRad, halfAngleRad, pedPos);
+        const cansee = this.#isPlayerInVisionCone(playerpos, headingRad, halfAngleRad, pedPos);
         let prevPoint = null;
         let coneColor = { r: 0, g: 255, b: 0, a: 200 };
 
@@ -121,7 +121,7 @@ export class DebugVisuals{
     }
 
     //логика для определения находится ли игрок в области видимости ped
-    isPlayerInVisionCone(playerPos, headingRad, halfAngleRad, pedPos) {
+    #isPlayerInVisionCone(playerPos, headingRad, halfAngleRad, pedPos) {
 
         const toPlayerX = playerPos.x - pedPos.x;
         const toPlayerY = playerPos.y - pedPos.y;

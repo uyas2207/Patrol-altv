@@ -17,7 +17,7 @@ export class RouteStorage {
         const routeName = this.routeData.routes.findIndex(route => route.name === name);
         if( routeName === -1 ){
             chat.send(player, `Не удалось найти route с параметром name = ${name}`);
-            this.printRoutesToPlayer(player);
+            this.#printRoutesToPlayer(player);
             return;
         }
 
@@ -78,7 +78,7 @@ export class RouteStorage {
         return this.routeData.routes.find(route => route.name === name);
     }
 
-    printRoutesToPlayer(player){
+    #printRoutesToPlayer(player){
         chat.send(player, 'Существующие name:');
         this.routeData.routes.forEach(route => {
             chat.send(player, route.name);

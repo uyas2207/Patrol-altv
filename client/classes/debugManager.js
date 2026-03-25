@@ -20,14 +20,14 @@ export class DebugManager {
         }
 
         if (ped.isdebuged === false){
-            this.pedDebugTurnOn(PedID);
+            this.#pedDebugTurnOn(PedID);
         }
         else{
-            this.pedDebugTurnOff(PedID);
+            this.#pedDebugTurnOff(PedID);
         }
     }
     
-    pedDebugTurnOn(PedID){
+    #pedDebugTurnOn(PedID){
         const ped = this.pedManager.getPed(PedID);
 
         if( ped.asignedRoute !== null ){
@@ -50,7 +50,7 @@ export class DebugManager {
         alt.log('this.singleDebug', this.singleDebug);
     }
 
-    pedDebugTurnOff(PedID){
+    #pedDebugTurnOff(PedID){
         const ped = this.pedManager.getPed(PedID);
 
         const timerId = this.singleDebug.get(ped.entity.id);
@@ -65,14 +65,14 @@ export class DebugManager {
             alt.log('route.isdebuged = false => будет повторяться в общем debug');
         }
         
-        alt.log(`pedDebugTurnOff`);
+        alt.log(`#pedDebugTurnOff`);
     }
     
     turnOnGlobalDebug() {
         this.debug = alt.everyTick(() => {
-            this.drawAllPedVisionCones();
-            this.drawAllMarkers();
-            this.connectAllRoutesLine();
+            this.#drawAllPedVisionCones();
+            this.#drawAllMarkers();
+            this.#connectAllRoutesLine();
         });
         alt.log(`debugTurnOn`);
     }
@@ -83,7 +83,7 @@ export class DebugManager {
         alt.log(`debugTurnOff`);
     }
 
-    drawAllMarkers() {
+    #drawAllMarkers() {
         this.routeManager.forEachRoute((attributes, nodes) => {
             if (attributes.isdebuged === false) {
                 this.debugVisuals.drawRouteMarkers(nodes);
@@ -91,7 +91,7 @@ export class DebugManager {
         });
     }
 
-    drawAllPedVisionCones() {
+    #drawAllPedVisionCones() {
         this.pedManager.forEachPed((ped) => {
             if (ped.isdebuged === false) {
                 this.debugVisuals.drawPedVisionCone(
@@ -103,7 +103,7 @@ export class DebugManager {
         });
     }
 
-    connectAllRoutesLine() {
+    #connectAllRoutesLine() {
         this.routeManager.forEachRoute((attributes, nodes) => {
             if (attributes.isdebuged === false) {
                 this.debugVisuals.connectNodesLine(nodes, attributes);

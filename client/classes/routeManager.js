@@ -14,10 +14,10 @@ export class RouteManager {
         this.currentRouteAttributes = null;      //в буддущем массив в котором будут доп знаечния для текщуего массива (looped, asigned, isdebuged)
         
         //подписывается на ивенты приходящие из других классов
-        this.registerEventListeners();
+        this.#registerEventListeners();
     }
 
-    registerEventListeners(){
+    #registerEventListeners(){
         
         alt.on('ped:routeAssigned', ({ routeID, pedId }) => {
             this.asignRouteToPed(routeID, pedId);
@@ -34,10 +34,10 @@ export class RouteManager {
             drawNotification(`route ${route.name} уже существует`);
             return;
         }
-        this.initializeMap(route);
+        this.#initializeMap(route);
     }
 
-    initializeMap(route){
+    #initializeMap(route){
         this.currentRouteAttributes = { //запоминает доп параметры маршрута
             id: route.id,
             name: route.name,
@@ -75,7 +75,7 @@ export class RouteManager {
             return;
         }
         const data = this.mainMap.get(routeID);
-        //this.initializeMap(data);
+        
         this.currentRouteAttributes = { //запоминает доп параметры маршрута
             id: data.attributes.id,
             name: data.attributes.name,

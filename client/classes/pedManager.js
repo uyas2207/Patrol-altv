@@ -13,14 +13,13 @@ export class PedManager {
 
         alt.on('route:cleared', (routeID) => {
             alt.log('PedManageron route:cleared');
-            this.clearPedAssignment(routeID);
+            this.#clearPedAssignment(routeID);
         });
         
     }
 
     //изменяет данные о ped, так как при вылете из стрим зоны и повторном влете у ped меняется большая часть данных и нужно перезаписать старые неактуальные данные о ped
     async entityInitialize(entity){
-        alt.log('entity.scriptID', entity.scriptID);
 
         // при повторном появлении ped на клиенте, меняется scriptID и другие значения, но остается тем же id
         if (this.mainPedMap.has(entity.id)) {
@@ -47,7 +46,7 @@ export class PedManager {
     }
 
     //проверяет всю mainPedMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать asignedRoute = null;
-    clearPedAssignment(routeID) {
+    #clearPedAssignment(routeID) {
         // обновление asignedRoute в mainPedMap
         this.mainPedMap.forEach((value) => {
             if(value.asignedRoute === routeID){ // && value.entity.id !== pedId
@@ -82,7 +81,7 @@ export class PedManager {
         //нужно после выполнения asignCurrentRouteToPed очищать в map значения asignedRoute такие же как routeID, так как этим ped больше не назначен этот маршрут
         
         //проверяет всю mainPedMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать asignedRoute = null;
-        this.clearPedAssignment(routeID);
+        this.#clearPedAssignment(routeID);
 
         //запоминает какой маршрту был назначен для этого ped
         ped.asignedRoute = routeID;
