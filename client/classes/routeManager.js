@@ -45,8 +45,6 @@ export class RouteManager {
             asigned: null,
             isdebuged: false
         };
-    
-        alt.log('currentRouteAttributes', JSON.stringify(this.currentRouteAttributes));
 
         this.currentRouteMap = new Map();
         //this.currentRouteMap.clear();    //делает map пустым (на случай если уже существует актинвый map с которым воыполняется работа до этого initializeMap)
@@ -58,12 +56,6 @@ export class RouteManager {
         this.mainMap.set(route.id, {
             attributes: this.currentRouteAttributes,
             nodes: this.currentRouteMap
-        });
-
-        alt.log('mainMap:');
-        this.mainMap.forEach(({ attributes, nodes }, id) => {
-            alt.log(`Route ID: ${id}, looped: ${attributes.looped}`);
-            alt.log(nodes);
         });
     }
     
@@ -84,8 +76,6 @@ export class RouteManager {
             isdebuged: data.attributes.isdebuged
         };
 
-        alt.log('currentRouteAttributes После switch:', JSON.stringify(this.currentRouteAttributes));
-
         this.currentRouteMap = new Map();
 
         data.nodes.forEach(node => {
@@ -96,8 +86,6 @@ export class RouteManager {
             attributes: this.currentRouteAttributes,
             nodes: this.currentRouteMap
         });
-        alt.log('currentRouteMap После switch:', JSON.stringify(this.currentRouteMap));
-        alt.log('Сменилась текщуий route на route =', data.attributes.name);
     }
 
     //добавить ноду к текущему маршруту
@@ -137,12 +125,6 @@ export class RouteManager {
             attributes: this.currentRouteAttributes,
             nodes: this.currentRouteMap
         });
-
-        alt.log('currentRouteMap после добавления новой ноды');
-        this.currentRouteMap.forEach((value, key) => {
-            alt.log(`Ключ: ${(key)}`);
-            alt.log('value:', (value));
-        });
     }
 
     dellNodeFromMap(arg){
@@ -152,11 +134,6 @@ export class RouteManager {
             return;
         }
         this.currentRouteMap.delete(arg); // удалить из map все значения записанные под ключом arg
-        alt.log('Весь Map после удаления ноды');
-        this.mainMap.forEach(({ attributes, nodes }, id) => {
-            alt.log(`Route ID: ${id}, looped: ${attributes.looped}`);
-            alt.log(nodes);
-        });
     }
 
     //очищает текущий маршрут и удаляет его из mainMap + останавливает ped которому был назначен этот маршрут
@@ -184,11 +161,9 @@ export class RouteManager {
     //отправляет на сервер текущий маршрут для сохранения его в общий список маршрутов в routePoints.json
     sendRouteMap(){           
         if ( this.currentRouteMap.size === 0 ) {
-            alt.log('Попытка сохранить пустой route');
             drawNotification(`Нельзя сохранять ПУСТОЙ route`);
             return;
         }
-        alt.log('askForRouteMap + sendRouteMap');
         //сохраняет в массив все данные о маршруте которые нужно будет отправить на сервер для сохранения в таком же виде
         const savingArray = {
             id: this.currentRouteAttributes.id,
@@ -196,7 +171,6 @@ export class RouteManager {
             looped: this.currentRouteAttributes.looped,
             nodes: Array.from(this.currentRouteMap.values())
         }
-        alt.log('savingArray:', JSON.stringify(savingArray));
         alt.emitServer('patrol:sendRouteMap', savingArray);
     }
     
@@ -234,8 +208,8 @@ export class RouteManager {
             this.mainMap.get(routeID).attributes.isdebuged = status;
         } 
         else {
-            alt.log('Некорректное использование changeRouteIsdebugedStatus');
-            alt.log('status может быть только true или false');
+            alt.logError('Некорректное использование changeRouteIsdebugedStatus');
+            alt.logError('status может быть только true или false');
             return;
         }
     }
@@ -246,13 +220,13 @@ export class RouteManager {
             route.attributes.asigned = pedId;
         }
         else{
-            alt.log('Передан неверный routeID в asignRouteToPed');
+            alt.logError('Передан неверный routeID в asignRouteToPed');
         }
     }
     //смена статуса asigned, после смены ped.asignedRoute route в классе PedManager
     unAsignRouteFromPed(routeID, pedId){
         if(!this.mainMap.has(routeID)){
-            alt.log('Передан неверный routeID в unAsignRouteFromPed');
+            alt.logError('Передан неверный routeID в unAsignRouteFromPed');
             return;
         }
         
@@ -261,9 +235,8 @@ export class RouteManager {
             route.attributes.asigned = null;
         }
         else{
-            alt.log(`Ped: ${pedID} не был назначен routeID: ${routeID}`);
+            alt.logError(`Ped: ${pedId} не был назначен routeID: ${routeID}`);
         }
-        
     }
 
     // перебор всех маршрутов с колбэком

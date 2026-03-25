@@ -22,12 +22,10 @@ export class RouteStorage {
         }
 
         alt.emitClient(player, 'patrol:initRoutes', this.routeData.routes[routeName]);
-        alt.log('route:', JSON.stringify(this.routeData.routes[routeName].id));
         chat.send(player, `/load ${name}`);
     }
 
     save(player, clientRoute) {
-        alt.log(JSON.stringify(clientRoute));
         const routeIndex = this.routeData.routes.findIndex(route => route.name === clientRoute.name);
         
         if( routeIndex === -1 ){

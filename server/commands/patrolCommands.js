@@ -44,7 +44,6 @@ export class PatrolCommands {
 
     executeCommand(category, player, args) {
         if (args.length === 0) {
-            alt.log('Вывод информации из help');
             this.showHelp(player, category);
             return;
         }
@@ -56,7 +55,6 @@ export class PatrolCommands {
             commandHandler(player, args.slice(1));
         } else {
             chat.send(player, `Неизвестная команда: /${category} ${subCommand}`);
-            alt.log('Вывод информации из help (else)');
             this.showHelp(player, category);
         }
     }
@@ -83,14 +81,12 @@ export class PatrolCommands {
     //запрашивает с клиента его текущий маршрут для сохранения в общий список в routePoints.json
     cmd_path_save_Command(player){
         alt.emitClient(player, 'patrol:askForRouteMap');
-        alt.log('save');
     }
     //передает на клиент маршрут с названием указанным в команде из routePoints.json
     cmd_path_load_Command(player, arg){
         if (!this.checkArgumentsLength(player, arg, 1)) return;
 
         const name = String(arg);
-        alt.log('name в loadcomande', name);
         this.routeStorage.load(player, name);
     }
     //удаляет из текщуего маршрута точку с указаным в команде номером
@@ -139,7 +135,6 @@ export class PatrolCommands {
 
         const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
         if (!pedId){
-            alt.log('Некорректное значение pedId:', pedId);
             return;
         }
         alt.emitClient(player, 'patrol:pedStop', pedId);
@@ -152,7 +147,6 @@ export class PatrolCommands {
 
         const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
         if (!pedId){
-            alt.log('Некорректное значение pedId:', pedId);
             return;
         }
         
@@ -186,7 +180,6 @@ export class PatrolCommands {
 
         const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
         if (!pedId){
-            alt.log('Некорректное значение pedId:', pedId);
             return;
         }
         alt.emitClient(player, 'patrol:pedDebug', pedId);
@@ -197,11 +190,9 @@ export class PatrolCommands {
 
         const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
         if (!pedId){
-            alt.log('Некорректное значение pedId:', pedId);
             return;
         }
 
-        alt.log('pedId = ', pedId);
         alt.emitClient(player, 'patrol:pedInfo', pedId);
         chat.send(player, `/ped info ${pedId}`);
     }
@@ -211,7 +202,6 @@ export class PatrolCommands {
     }
     //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.routePointsMap + currentRouteAttributes
     cmd_path_info_Command(player){
-     //   alt.log('arg = ', arg);
         alt.emitClient(player, 'patrol:route');
     }
 
@@ -225,7 +215,6 @@ export class PatrolCommands {
             chat.send(player, 'Неправильный аругмент, аргументом может быть только целое число от 0 до 9');
             return false;
         }
-        alt.log('parsedArg =', parsedArg)
         return parsedArg;
     }
     

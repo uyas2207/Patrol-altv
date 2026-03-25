@@ -7,9 +7,6 @@ export class PedManager {
     constructor(defaultParameters, npcs){
         this.defaultParameters = defaultParameters;
         this.npcs = npcs;
-
-        alt.log('defaultParameters:', this.defaultParameters);
-        alt.log('npcs', this.npcs.length);
     }
     
     spawnDefaultNpcs = () =>{

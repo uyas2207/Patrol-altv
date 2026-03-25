@@ -53,7 +53,6 @@ export class PatrolExecutor {
         native.createPatrolRoute();
 
         native.taskPatrol(ped, `miss_${attributes.name}`, 0, false, true);
-        alt.log(`Назначен патруль ${attributes.name} для ped.id ${ped.id}, ped.scriptID ${ped.scriptID}`);
     }
 
 }

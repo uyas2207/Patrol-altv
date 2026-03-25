@@ -12,7 +12,6 @@ export class PedManager {
         this.defaultConfig = defaultClientConfig;
 
         alt.on('route:cleared', (routeID) => {
-            alt.log('PedManageron route:cleared');
             this.#clearPedAssignment(routeID);
         });
         
@@ -31,7 +30,6 @@ export class PedManager {
                 //const route = this.routeManager.mainMap.get(data.asignedRoute);
                 await new Promise(resolve => alt.setTimeout(resolve, 1000));    //setTimeout что бы ped успел инициализироваться полностью, получить netOwner и мог выполнять маршрут
                 this.patrolExecutor.asignCurrentRouteToPed(data.entity, route.attributes, route.nodes);
-                alt.log(`Ped ${data.entity.id}, заново asigned прошлый route ${data.asignedRoute}`);
             }
             return;
         }
@@ -42,7 +40,6 @@ export class PedManager {
             isdebuged: false
         });
         const data = this.mainPedMap.get(entity.id);
-        alt.log(`entity id: ${data.entity.id}, entity scriptID: ${data.entity.scriptID}, asignedRoute: ${data.asignedRoute}`);
     }
 
     //проверяет всю mainPedMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать asignedRoute = null;
@@ -70,9 +67,6 @@ export class PedManager {
             drawNotification(`Ped ${pedId} не найден`);
             return;
         }
-
-        alt.log('route:', JSON.stringify(route));
-        alt.log('ped:', JSON.stringify(ped));
 
         // назначение маршртуа ped
         this.patrolExecutor.asignCurrentRouteToPed(ped.entity, route.attributes, route.nodes);
@@ -107,13 +101,9 @@ export class PedManager {
             
             if (data.attributes.isdebuged === true){
                 this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, false);
-                //data.attributes.isdebuged = false;
-            
-                alt.log('route.isdebuged = false => будет повторяться в общем debug');
             }
             
             ped.asignedRoute = null;
-            alt.log(`Удален маршрут ${data.attributes.name} для ped ${pedID}`);
         }
         else{
             drawNotification(`Ped ${pedID} не назначен никакой маршрут`);
@@ -132,8 +122,6 @@ export class PedManager {
                 // нужно что бы код продолжил выполняться после ошибки если она будет
             }
         }
-        const heading = native.getEntityHeading(data.entity.scriptID);
-        alt.log ('heading =', heading);
     }
 
     //выводит всю информацию о ped из map mainPedMap (asignedRoute, isdebuged)
@@ -160,8 +148,8 @@ export class PedManager {
             this.mainPedMap.get(pedId).isdebuged = status;
         }
         else {
-            alt.log('Некорректное использование changePedIsdebugedStatus');
-            alt.log('status может быть только true или false');
+            alt.logError('Некорректное использование changePedIsdebugedStatus');
+            alt.logError('status может быть только true или false');
             return;
         }
     }

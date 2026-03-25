@@ -32,7 +32,6 @@ export class DebugManager {
 
         if( ped.asignedRoute !== null ){
             this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, true);
-            alt.log('route.isdebuged = true, не будет повторяться в общем debug');
         }
 
         this.pedManager.changePedIsdebugedStatus(ped.entity.id, true);
@@ -47,7 +46,6 @@ export class DebugManager {
             }
         });
         this.singleDebug.set(ped.entity.id, timerID);
-        alt.log('this.singleDebug', this.singleDebug);
     }
 
     #pedDebugTurnOff(PedID){
@@ -56,16 +54,12 @@ export class DebugManager {
         const timerId = this.singleDebug.get(ped.entity.id);
         alt.clearEveryTick(timerId);
         this.singleDebug.delete(ped.entity.id);
-        alt.log('this.singleDebug', this.singleDebug);
 
         this.pedManager.changePedIsdebugedStatus(ped.entity.id, false);
 
         if( ped.asignedRoute !== null ){
             this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, false);
-            alt.log('route.isdebuged = false => будет повторяться в общем debug');
         }
-        
-        alt.log(`#pedDebugTurnOff`);
     }
     
     turnOnGlobalDebug() {
@@ -74,13 +68,11 @@ export class DebugManager {
             this.#drawAllMarkers();
             this.#connectAllRoutesLine();
         });
-        alt.log(`debugTurnOn`);
     }
 
     turnOffGlobalDebug() {
         alt.clearEveryTick(this.debug);
         this.debug = null;
-        alt.log(`debugTurnOff`);
     }
 
     #drawAllMarkers() {

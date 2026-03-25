@@ -41,7 +41,6 @@ class PatrolClient {
         });
         //при появлении ped в стрим зоне игрока (если не ped return)
         alt.on('gameEntityCreate', (entity) => {
-            alt.log('gameEntityCreate, entity:', entity);
             if(!(entity instanceof alt.Ped)) return;
 
             this.pedManager.entityInitialize(entity);
@@ -53,15 +52,12 @@ class PatrolClient {
         });
         //отсанавливает ped (deletePatrolRoute) если ему назначен маршрут + отключает ped debug у маршрута и изменяет данные в pedmap (asignedRoute, isdebuged)
         alt.onServer('patrol:pedStop', (arg) => {
-            alt.log(`ped ${arg} Stop`);
             this.pedManager.pedStop(arg);
         });
         //включает debug для конкретного ped (его область видимости и его маршрут если у него есть asignedRoute)
         alt.onServer('patrol:pedDebug', (arg) => {
-            alt.log(`ped ${arg} Debug`);
             
             this.debugManager.pedDebug(arg);
-//          this.pedManager.pedDebug(arg);
         });
 
         //отображать debug, после команды с сервера
@@ -75,23 +71,19 @@ class PatrolClient {
         });
         //сменить текущий route (route к которому добавляются и удаляются nodes)
         alt.onServer('patrol:switchCurrentRoute', (routeID) => {
-            alt.log('routeID:', routeID);
             this.routeManager.switchCurrentRoute(routeID);
         });
         //назначить ped текущий маршрут 
         alt.onServer('patrol:asignCurrentRouteToPed', (arg, routeID) => {
-            alt.log('arg', arg);
             this.pedManager.asignRouteToPed(arg, routeID);
         });
         //добавить ноду к текущему маршруту
         alt.onServer('patrol:addNode', (coords, lookingCoords, arg) => {
             this.routeManager.addNodeTocurrentRouteMap(coords, lookingCoords, arg);
-            alt.log(`addnode`);
         });
         //удалить ноду из текущего маршрута
         alt.onServer('patrol:dellNode', (arg) => {
             this.routeManager.dellNodeFromMap(arg);
-            alt.log(`dellNode`);
         });
         //отправляет на сервер текущий маршрут для сохранения его в общий список маршрутов в routePoints.json
         alt.onServer('patrol:askForRouteMap', () => {

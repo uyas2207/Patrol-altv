@@ -8,4 +8,3 @@ export const defaultClientConfig = {
     viewAngle: 80,         // угол обзора (градусы)
     viewSectors: 7,       //количество секторов видимости у ped
 }
-//defaultConfig
