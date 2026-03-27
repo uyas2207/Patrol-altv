@@ -3,9 +3,9 @@ import * as alt from 'alt-client';
 import {drawNotification} from '@utilities';
 
 export class DebugManager {
-    constructor(pedManager, routeManager, debugVisuals) {
+    constructor(pedManager, routeStorage, debugVisuals) {
         this.pedManager = pedManager;
-        this.routeManager = routeManager;
+        this.routeStorage = routeStorage;
         this.debugVisuals = debugVisuals;
         this.debug = null;  // хранит everytick для глобального debug
         this.singleDebug = new Map(); // хранит everytick для визуального отображения у конкретных ped
@@ -31,7 +31,7 @@ export class DebugManager {
         const ped = this.pedManager.getPed(PedID);
 
         if( ped.asignedRoute !== null ){
-            this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, true);
+            this.routeStorage.setRouteDebugStatus(ped.asignedRoute, true);
         }
 
         this.pedManager.changePedIsdebugedStatus(ped.entity.id, true);
@@ -40,7 +40,7 @@ export class DebugManager {
             this.debugVisuals.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt.Player.local.pos);
 
             if(ped.asignedRoute !== null){
-                const data = this.routeManager.getRoute(ped.asignedRoute);
+                const data = this.routeStorage.getRoute(ped.asignedRoute);
                 this.debugVisuals.connectNodesLine(data.nodes, data.attributes);
                 this.debugVisuals.drawRouteMarkers(data.nodes);
             }
@@ -58,7 +58,7 @@ export class DebugManager {
         this.pedManager.changePedIsdebugedStatus(ped.entity.id, false);
 
         if( ped.asignedRoute !== null ){
-            this.routeManager.changeRouteIsdebugedStatus(ped.asignedRoute, false);
+            this.routeStorage.setRouteDebugStatus(ped.asignedRoute, false);
         }
     }
     
@@ -76,7 +76,7 @@ export class DebugManager {
     }
 
     #drawAllMarkers() {
-        this.routeManager.forEachRoute((attributes, nodes) => {
+        this.routeStorage.forEachRoute((attributes, nodes) => {
             if (attributes.isdebuged === false) {
                 this.debugVisuals.drawRouteMarkers(nodes);
             }
@@ -96,7 +96,7 @@ export class DebugManager {
     }
 
     #connectAllRoutesLine() {
-        this.routeManager.forEachRoute((attributes, nodes) => {
+        this.routeStorage.forEachRoute((attributes, nodes) => {
             if (attributes.isdebuged === false) {
                 this.debugVisuals.connectNodesLine(nodes, attributes);
             }

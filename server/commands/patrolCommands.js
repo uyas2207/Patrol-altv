@@ -144,7 +144,7 @@ export class PatrolCommands {
         const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
         if (!pedId) return;
 
-        const name = String(arg[1]);
+        const name = String(arg[0]);
         const routeId = this.routeStorage.checkRouteId(player, name);
         if (!routeId) return;
 
@@ -156,7 +156,7 @@ export class PatrolCommands {
     cmd_path_switch_Command(player, arg){
         if (!this.#checkArgumentsLength(player, arg, 1)) return;
 
-        const name = String(arg[1]);
+        const name = String(arg[0]);
         const routeId = this.routeStorage.checkRouteId(player, name);
         if (!routeId) return;
 

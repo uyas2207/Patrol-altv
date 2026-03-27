@@ -17,10 +17,10 @@ class PatrolServer {
         this.debug = new Debug;
         this.patrolCommands = new PatrolCommands(this.pedManager, this.routeStorage, this.debug);
 
-        this.init();
+        this.#init();
     }
 
-    init(){
+    #init(){
         alt.on('playerConnect', async (player) => {
             player.spawn(-1269.91, -1438.64, 4.46);
             player.rot = new alt.Vector3(0, 0, -2.5);

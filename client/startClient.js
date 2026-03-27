@@ -2,30 +2,54 @@ import * as alt from 'alt-client';
 
 import { defaultClientConfig } from './config/clientConfig.js';
 
-import { RouteManager } from './classes/routeManager.js';
 import { PedManager } from './classes/pedManager.js';
 import { DebugManager } from './classes/debugManager.js';
 import { DebugVisuals } from './classes/debugVisuals.js';
 
 import { PatrolExecutor } from './classes/patrolExecutor.js';
 
+import { RouteManager } from './classes/Routes/routeManager.js';
+import { RouteStorage } from './classes/Routes/routeStorage.js';
+
 class PatrolClient {
     constructor() {
+        this.routeStorage = new RouteStorage();
+        
+        this.routeManager = new RouteManager(this.routeStorage, defaultClientConfig);
+        
 
+        
         this.patrolExecutor = new PatrolExecutor(defaultClientConfig);
 
         this.debugVisuals = new DebugVisuals(defaultClientConfig); //класс для визуального отображения debug
 
-        this.routeManager = new RouteManager(defaultClientConfig);
-        this.pedManager = new PedManager(this.routeManager, this.patrolExecutor, defaultClientConfig);
-        this.debugManager = new DebugManager(this.pedManager, this.routeManager, this.debugVisuals);
+        //this.routeManager = new RouteManager(defaultClientConfig);
+        
+        this.pedManager = new PedManager(this.routeStorage, this.patrolExecutor, defaultClientConfig);
+        this.debugManager = new DebugManager(this.pedManager, this.routeStorage, this.debugVisuals);
     
         //this.routeManager.setPedManager(this.pedManager);
-
-        this.init();
+        this.#init();
     }
 
-    init(){
+    #init(){
+        //не было возможности передавать классу routeStorage класс pedManager и классу pedManager класс routeStorage одновременно без костыля,
+        //поэтому они взаимодействуют друг с другом через ивенты
+
+        //когда в pedManager назначается маршрут и нужно что бы другие классы знали что этот маршрту является назначенным
+        alt.on('ped:routeAssigned', ({ routeID, pedId }) => {
+            this.routeStorage.setRouteAssignment(routeID, pedId);
+        });
+
+        //ивент который приходит из PedManager когда происходит ped.asignedRoute = null и нужно сделать asignedRoute в других map
+        alt.on('ped:routeUnassigned', ({ routeID, pedID }) => {
+            this.routeStorage.clearRouteAssignment(routeID, pedID);
+        });
+
+        //когда очищается route в классе routeManager и нужно проверить в классе pedManager существовал ли ped которому был назначен такой маршрут
+        alt.on('route:cleared', (routeID) => {
+            this.pedManager.clearPedAssignment(routeID);
+        });
 
         //выводит всю информацию о ped
         alt.onServer('patrol:pedInfo', (arg) => {
@@ -48,7 +72,9 @@ class PatrolClient {
 
         //получает route с сервера и добавляет его в mainMap, если такой route еще не добавлен
         alt.onServer('patrol:initRoutes', (route) => {
-            this.routeManager.initRoutes(route);
+            this.routeStorage.addRoute(route);
+
+            this.routeManager.switchCurrentRoute(route.id);
         });
         //отсанавливает ped (deletePatrolRoute) если ему назначен маршрут + отключает ped debug у маршрута и изменяет данные в pedmap (asignedRoute, isdebuged)
         alt.onServer('patrol:pedStop', (arg) => {
@@ -78,12 +104,12 @@ class PatrolClient {
             this.pedManager.asignRouteToPed(arg, routeID);
         });
         //добавить ноду к текущему маршруту
-        alt.onServer('patrol:addNode', (coords, lookingCoords, arg) => {
-            this.routeManager.addNodeTocurrentRouteMap(coords, lookingCoords, arg);
+        alt.onServer('patrol:addNode', (coords, lookingCoords, node) => {
+            this.routeManager.addNode(coords, lookingCoords, node);
         });
         //удалить ноду из текущего маршрута
         alt.onServer('patrol:dellNode', (arg) => {
-            this.routeManager.dellNodeFromMap(arg);
+            this.routeManager.deleteNode(arg);
         });
         //отправляет на сервер текущий маршрут для сохранения его в общий список маршрутов в routePoints.json
         alt.onServer('patrol:askForRouteMap', () => {
