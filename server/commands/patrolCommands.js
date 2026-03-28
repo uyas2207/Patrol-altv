@@ -138,18 +138,18 @@ export class PatrolCommands {
     }
 
     //начзначет ped маршрут
-    cmd_ped_asign_Command(player, arg){
+    cmd_ped_assign_Command(player, arg){
         if (!this.#checkArgumentsLength(player, arg, 2)) return;
 
         const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
         if (!pedId) return;
 
-        const name = String(arg[0]);
+        const name = String(arg[1]);
         const routeId = this.routeStorage.checkRouteId(player, name);
         if (!routeId) return;
 
-        alt.emitClient(player, 'patrol:asignCurrentRouteToPed', pedId, routeId);
-        chat.send(player, `/ped asign ${pedId} ${name}`);
+        alt.emitClient(player, 'patrol:assignCurrentRouteToPed', pedId, routeId);
+        chat.send(player, `/ped assign ${pedId} ${name}`);
     }
 
     //меняет текщуий маршрут на клиенте (для коректной работы addnode dellnode т.к добавление и удаление нод происходит с текущим маршрутом)
@@ -185,7 +185,7 @@ export class PatrolCommands {
         chat.send(player, `/ped info ${pedId}`);
     }
 
-    //выводит всю информацию о ped из клиентской map mainPedMap (asignedRoute, isdebuged)
+    //выводит всю информацию о ped из клиентской map pedDataMap (assignedRoute, isdebuged)
     cmd_ped_map_Command(player){
         alt.emitClient(player, 'patrol:pedMap');
     }

@@ -3,8 +3,8 @@ import * as alt from 'alt-client';
 import {drawNotification} from '@utilities';
 
 export class DebugManager {
-    constructor(pedManager, routeStorage, debugVisuals) {
-        this.pedManager = pedManager;
+    constructor(pedStorage, routeStorage, debugVisuals) {
+        this.pedStorage = pedStorage;
         this.routeStorage = routeStorage;
         this.debugVisuals = debugVisuals;
         this.debug = null;  // хранит everytick для глобального debug
@@ -12,7 +12,7 @@ export class DebugManager {
     }
     
     pedDebug(PedID){
-        const ped = this.pedManager.getPed(PedID);
+        const ped = this.pedStorage.getPed(PedID);
 
         if (!ped) {
             drawNotification(`Ped=${PedID} не найден`);
@@ -28,19 +28,19 @@ export class DebugManager {
     }
     
     #pedDebugTurnOn(PedID){
-        const ped = this.pedManager.getPed(PedID);
+        const ped = this.pedStorage.getPed(PedID);
 
-        if( ped.asignedRoute !== null ){
-            this.routeStorage.setRouteDebugStatus(ped.asignedRoute, true);
+        if( ped.assignedRoute !== null ){
+            this.routeStorage.setRouteDebugStatus(ped.assignedRoute, true);
         }
 
-        this.pedManager.changePedIsdebugedStatus(ped.entity.id, true);
+        this.pedStorage.setPedIsdebugedStatus(ped.entity.id, true);
 
         const timerID = alt.everyTick(() => {
             this.debugVisuals.drawPedVisionCone(ped.entity.pos, ped.entity.scriptID, alt.Player.local.pos);
 
-            if(ped.asignedRoute !== null){
-                const data = this.routeStorage.getRoute(ped.asignedRoute);
+            if(ped.assignedRoute !== null){
+                const data = this.routeStorage.getRoute(ped.assignedRoute);
                 this.debugVisuals.connectNodesLine(data.nodes, data.attributes);
                 this.debugVisuals.drawRouteMarkers(data.nodes);
             }
@@ -49,16 +49,16 @@ export class DebugManager {
     }
 
     #pedDebugTurnOff(PedID){
-        const ped = this.pedManager.getPed(PedID);
+        const ped = this.pedStorage.getPed(PedID);
 
         const timerId = this.singleDebug.get(ped.entity.id);
         alt.clearEveryTick(timerId);
         this.singleDebug.delete(ped.entity.id);
 
-        this.pedManager.changePedIsdebugedStatus(ped.entity.id, false);
+        this.pedStorage.setPedIsdebugedStatus(ped.entity.id, false);
 
-        if( ped.asignedRoute !== null ){
-            this.routeStorage.setRouteDebugStatus(ped.asignedRoute, false);
+        if( ped.assignedRoute !== null ){
+            this.routeStorage.setRouteDebugStatus(ped.assignedRoute, false);
         }
     }
     
@@ -84,7 +84,7 @@ export class DebugManager {
     }
 
     #drawAllPedVisionCones() {
-        this.pedManager.forEachPed((ped) => {
+        this.pedStorage.forEachPed((ped) => {
             if (ped.isdebuged === false) {
                 this.debugVisuals.drawPedVisionCone(
                     ped.entity.pos,

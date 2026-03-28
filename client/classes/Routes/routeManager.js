@@ -5,13 +5,13 @@ import * as native from 'natives';
 import {drawNotification} from '@utilities';
 
 export class RouteManager {
-    constructor(routeStorage, defaultClientConfig) {
+    constructor(routeStorage, pedStorage, defaultClientConfig) {
         this.routeStorage = routeStorage;
+        this.pedStorage = pedStorage;
         this.defaultConfig = defaultClientConfig;
 
         this.currentRouteMap = new Map();        // текущий маршрут
-        this.currentRouteAttributes = null;      // в буддущем массив в котором будут доп знаечния для текщуего массива (looped, asigned, isdebuged)
-        
+        this.currentRouteAttributes = null;      // в буддущем массив в котором будут доп знаечния для текщуего массива (looped, assigned, isdebuged)
     }
 
     // сменить текущий route (route к которому добавляются и удаляются nodes)
@@ -28,7 +28,7 @@ export class RouteManager {
             id: data.attributes.id,
             name: data.attributes.name,
             looped: data.attributes.looped,
-            asigned: data.attributes.asigned,
+            assigned: data.attributes.assigned,
             isdebuged: data.attributes.isdebuged
         };
 
@@ -93,7 +93,7 @@ export class RouteManager {
         }
         const tempID = this.currentRouteAttributes.id;
 
-        if(this.currentRouteAttributes.asigned !== null){
+        if(this.currentRouteAttributes.assigned !== null){
             native.deletePatrolRoute(`miss_${this.currentRouteAttributes.name}`);
         }
         // что бы не пришлось переприсваивать очщенные значения this.currentRouteAttributes и this.currentRouteMap
@@ -101,8 +101,9 @@ export class RouteManager {
         
         this.currentRouteAttributes = null;
         this.currentRouteMap.clear();
-        // так как произошел deletePatrolRoute ped больше не назначен маршрут и нужно сделать asignedRoute = null если сущуствовал ped с таким маршрутом
-        alt.emit('route:cleared', tempID);
+        // так как произошел deletePatrolRoute ped больше не назначен маршрут и нужно сделать assignedRoute = null если сущуствовал ped с таким маршрутом
+        //alt.emit('route:cleared', tempID);
+        this.pedStorage.unassignRouteFromAllPeds(tempID);
     }
 
     // отправляет на сервер текущий маршрут для сохранения его в общий список маршрутов в routePoints.json

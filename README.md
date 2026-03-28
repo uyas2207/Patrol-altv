@@ -22,7 +22,7 @@
 ##### 3. DebugVisuals
    Отвечает за визуальное отображение debug область видимости ped, точки nodes. Получает данные которые нужны для отображения (nodes, pedPos, pedScriptID ...) и отображает. + рассчитывает с помощью координат игрока, координат ped и heading ped находится ли игрок в области видимости ped.
 ##### 4. PedManager
-   Класс который хранит в себе всю необходимую информацию о ped (Ped, asignedRoute, isdebuged). Назначает маршруты ped, переназначает маршруты при перезалете в стрим зону, останавливает ped по команде с сервера + передает данные для изменения в класс RouteManager (например данные какому ped назначен маршрут и отображается ли маршрут в singledebug у ped).
+   Класс который хранит в себе всю необходимую информацию о ped (Ped, assignedRoute, isdebuged). Назначает маршруты ped, переназначает маршруты при перезалете в стрим зону, останавливает ped по команде с сервера + передает данные для изменения в класс RouteManager (например данные какому ped назначен маршрут и отображается ли маршрут в singledebug у ped).
 ##### 5. PedDebugManager
    Отвечает за хранение everytick для визуального отображения debug у конкретных ped, включает и отключает отображение debug у конкретного ped по команде с сервера.
 ##### 6. RouteManager
@@ -34,7 +34,7 @@
 3. patrol:dellNode
 4. patrol:addNode
 5. patrol:pedStop
-6. patrol:asignCurrentRouteToPed
+6. patrol:assignCurrentRouteToPed
 7. patrol:switchCurrentRoute
 8. patrol:pedDebug
 9. patrol:debugTurnOff

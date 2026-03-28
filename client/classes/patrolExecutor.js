@@ -1,5 +1,3 @@
-import * as alt from 'alt-client';
-
 import * as native from 'natives';
 
 import {drawNotification} from '@utilities';
@@ -10,7 +8,7 @@ export class PatrolExecutor {
     }
 
     //назначение маршрута ped
-    asignCurrentRouteToPed(ped, attributes, nodes) {
+    assignCurrentRouteToPed(ped, attributes, nodes) {
         if ( nodes.size === 0 ){
             drawNotification(`Нельзя назначить пустой маршрут для патрулирования`);
             return;
