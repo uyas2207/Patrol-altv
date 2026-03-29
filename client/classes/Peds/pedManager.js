@@ -92,23 +92,4 @@ export class PedManager {
         this.pedStorage.unassignPedRoute(pedId);
     }
 
-    pedInfoCommand(arg){
-        const data = this.pedStorage.getPed(arg);
-        alt.log(`data ${data.entity}`);
-        alt.log('=== ВСЁ О PED ===');
-        for (let key in data.entity) {
-            try {
-                alt.log(`${key} = ${data.entity[key]}`);
-            } catch (e) {
-                alt.log(`${key} = [не удалось получить значение]`);
-            }  
-        }
-    }
-
-    pedMapCommand(){
-        this.pedStorage.forEachPed((ped) => {
-            alt.log(`Ped ID: ${ped.entity.id}, assignedRoute: ${ped.assignedRoute}, isdebuged: ${ped.isdebuged}`);
-        });
-    }
-
 }

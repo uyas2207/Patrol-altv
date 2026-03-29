@@ -174,27 +174,6 @@ export class PatrolCommands {
         alt.emitClient(player, 'patrol:pedDebug', pedId);
     }
 
-    //выводит всю информацию о ped на клиенте (scriptID, netOwner, dimension, remoteID ...)
-    cmd_ped_info_Command(player, arg){
-        if (!this.#checkArgumentsLength(player, arg, 1)) return;
-
-        const pedId = this.pedManager.isValidPedId(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
-        if (!pedId) return;
-
-        alt.emitClient(player, 'patrol:pedInfo', pedId);
-        chat.send(player, `/ped info ${pedId}`);
-    }
-
-    //выводит всю информацию о ped из клиентской map pedDataMap (assignedRoute, isdebuged)
-    cmd_ped_map_Command(player){
-        alt.emitClient(player, 'patrol:pedMap');
-    }
-
-    //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.routePointsMap + currentRouteAttributes
-    cmd_path_info_Command(player){
-        alt.emitClient(player, 'patrol:route');
-    }
-
     //универсальная проверка аргумента в командах, аругмент может быть только целым числом от 0 до 9
     //при провале возвращает false, при успехе значение корректного аргумента(parseInt(arg[0]))
     #checkNode(player, arg){

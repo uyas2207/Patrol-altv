@@ -122,23 +122,6 @@ export class RouteManager {
         }
         alt.emitServer('patrol:sendRouteMap', savingArray);
     }
-    
-    // выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.currentRouteMap + currentRouteAttributes
-    printAllRoutesInfo() {
-        alt.log('Весь allRoutesMap:');
-        this.routeStorage.forEachRoute((attributes, nodes) => {
-            alt.log(`Ключ: ${attributes.id}`);
-            alt.log('attributes:', attributes);
-            alt.log('nodes:', nodes);
-        });
-        alt.log('===========================================================');
-        alt.log('this.currentRouteMap:');
-        this.currentRouteMap.forEach((value, key) => {
-            alt.log(`Ключ: ${key}`, 'value:', value);
-        });
-        alt.log('===========================================================');
-        alt.log('this.currentRouteAttributes:', JSON.stringify(this.currentRouteAttributes));
-    }
 
     // обновляет ссылку в routeStorage после пересоздания currentRouteMap через new Map()
     // нужен только когда currentRouteMap пересоздаётся

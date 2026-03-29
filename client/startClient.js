@@ -40,18 +40,6 @@ class PatrolClient {
     }
 
     #init(){
-        //выводит всю информацию о ped
-        alt.onServer('patrol:pedInfo', (arg) => {
-            this.pedManager.pedInfoCommand(arg);
-        });
-        //выводит все значения записанные на клиенте в mainmap (какие маршруты загружены на клиенте) + this.currentRouteMap + currentRouteAttributes
-        alt.onServer('patrol:route', () => {
-            this.routeManager.printAllRoutesInfo();
-        });
-        //выводит всю информацию о ped из map pedDataMap (assignedRoute, isdebuged)
-        alt.onServer('patrol:pedMap', () => {
-            this.pedManager.pedMapCommand();
-        });
         //при появлении ped в стрим зоне игрока (если не ped return)
         alt.on('gameEntityCreate', (entity) => {
             if(!(entity instanceof alt.Ped)) return;
