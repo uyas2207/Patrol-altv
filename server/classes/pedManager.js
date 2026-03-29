@@ -18,8 +18,9 @@ export class PedManager {
         });
         
     }
+    
     //проверка что PedID из команды входит в npcs.length
-    checkNpcs(player, arg){
+    isValidPedId(player, arg){
         const pedId = parseInt(arg[0]);
         if (isNaN(pedId) || arg[0].length !== 1 || pedId < 1 || pedId > this.npcs.length){
             chat.send(player, `Аругментом может быть только целое число от 1 до ${this.npcs.length}`);

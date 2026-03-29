@@ -98,11 +98,11 @@ export class PatrolCommands {
         const node = (this.#checkNode(player, node_id));   //node = node_id или false если введены некоректные данные для node_id
         //проверка !node не рабоатет, так как аргуменом может быть 0
         if (node === false){
-            chat.send(player, `Использование dellnode /dellnode node_id`);
+            chat.send(player, `Использование deleteNode /deleteNode node_id`);
             return;
         }
-        alt.emitClient(player, 'patrol:dellNode', (node));
-        chat.send(player, `/dellNode ${node}`);
+        alt.emitClient(player, 'patrol:deleteNode', (node));
+        chat.send(player, `/deleteNode ${node}`);
     }
 
     //добавляет в текущий маршрут точку на которой стоит игрок
@@ -129,7 +129,7 @@ export class PatrolCommands {
     cmd_ped_stop_Command(player, arg){
         if (!this.#checkArgumentsLength(player, arg, 1)) return;
 
-        const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
+        const pedId = this.pedManager.isValidPedId(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
         if (!pedId) return;
         
         alt.emitClient(player, 'patrol:pedStop', pedId);
@@ -141,7 +141,7 @@ export class PatrolCommands {
     cmd_ped_assign_Command(player, arg){
         if (!this.#checkArgumentsLength(player, arg, 2)) return;
 
-        const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
+        const pedId = this.pedManager.isValidPedId(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
         if (!pedId) return;
 
         const name = String(arg[1]);
@@ -152,7 +152,7 @@ export class PatrolCommands {
         chat.send(player, `/ped assign ${pedId} ${name}`);
     }
 
-    //меняет текщуий маршрут на клиенте (для коректной работы addnode dellnode т.к добавление и удаление нод происходит с текущим маршрутом)
+    //меняет текщуий маршрут на клиенте (для коректной работы addnode deleteNode т.к добавление и удаление нод происходит с текущим маршрутом)
     cmd_path_switch_Command(player, arg){
         if (!this.#checkArgumentsLength(player, arg, 1)) return;
 
@@ -168,7 +168,7 @@ export class PatrolCommands {
     cmd_ped_debug_Command(player, arg){
         if (!this.#checkArgumentsLength(player, arg, 1)) return;
 
-        const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
+        const pedId = this.pedManager.isValidPedId(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
         if (!pedId) return;
 
         alt.emitClient(player, 'patrol:pedDebug', pedId);
@@ -178,7 +178,7 @@ export class PatrolCommands {
     cmd_ped_info_Command(player, arg){
         if (!this.#checkArgumentsLength(player, arg, 1)) return;
 
-        const pedId = this.pedManager.checkNpcs(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
+        const pedId = this.pedManager.isValidPedId(player, arg); //pedId = pedId или false если введены некоректные данные для pedId
         if (!pedId) return;
 
         alt.emitClient(player, 'patrol:pedInfo', pedId);

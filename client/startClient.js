@@ -104,7 +104,7 @@ class PatrolClient {
             this.routeManager.addNode(coords, lookingCoords, node);
         });
         //удалить ноду из текущего маршрута
-        alt.onServer('patrol:dellNode', (arg) => {
+        alt.onServer('patrol:deleteNode', (arg) => {
             this.routeManager.deleteNode(arg);
         });
         //отправляет на сервер текущий маршрут для сохранения его в общий список маршрутов в routePoints.json
