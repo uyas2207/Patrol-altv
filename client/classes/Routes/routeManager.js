@@ -126,9 +126,10 @@ export class RouteManager {
     // обновляет ссылку в routeStorage после пересоздания currentRouteMap через new Map()
     // нужен только когда currentRouteMap пересоздаётся
     #syncWithRouteStorage() {
-        this.routeStorage.allRoutesMap.set(this.currentRouteAttributes.id, {
-            attributes: this.currentRouteAttributes,
-            nodes: this.currentRouteMap
-        });
+        this.routeStorage.updateRoute(
+            this.currentRouteAttributes.id,
+            this.currentRouteAttributes,
+            this.currentRouteMap
+        );
     }
 }

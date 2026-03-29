@@ -80,6 +80,14 @@ export class RouteStorage {
         }
         this.allRoutesMap.get(routeID).attributes.assigned = null;
     }
+    
+    //для синхронизации данных после изменений в классе routeManager
+    updateRoute(routeID, attributes, nodes){
+        this.allRoutesMap.set(routeID, {
+            attributes: attributes,
+            nodes: nodes
+        });
+    }
 
     // перебор всех маршрутов с колбэком
     forEachRoute(callback) {

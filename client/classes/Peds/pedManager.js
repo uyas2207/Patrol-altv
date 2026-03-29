@@ -35,7 +35,7 @@ export class PedManager {
         //нужно после выполнения assignCurrentRouteToPed очищать в map значения assignedRoute такие же как routeID, так как этим ped больше не назначен этот маршрут
         
         //проверяет всю pedDataMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать assignedRoute = null + сделать isdebuged = false в классе routeStorage;
-        this.clearAllPedDependencies(routeID);
+        this.#clearAllPedDependencies(routeID);
 
         //запоминает какой маршрту был назначен для этого ped
         this.pedStorage.setPedRoute(pedId, routeID);
@@ -54,7 +54,7 @@ export class PedManager {
         if (ped.assignedRoute !== null ){
             const route = this.routeStorage.getRoute(ped.assignedRoute);
             native.deletePatrolRoute(`miss_${route.attributes.name}`);
-            this.clearPedDependencies(ped.assignedRoute, pedID);
+            this.#clearPedDependencies(ped.assignedRoute, pedID);
         }
         else{
             drawNotification(`Ped ${pedID} не назначен никакой маршрут`);
@@ -77,16 +77,16 @@ export class PedManager {
     }
 
     //проверяет всю pedDataMap, существовал ли какой то ped которому уже был назначен такой маршрут ранее, если был сделать assignedRoute = null;
-    clearAllPedDependencies(routeID) {
+    #clearAllPedDependencies(routeID) {
         this.pedStorage.forEachPed((ped) => {
             if (ped.assignedRoute === routeID) {
                 //если был такой ped которому был назначен такой же маршрут выставляет значение assignedRoute = null в клсаае routeStorage и в pedDataMap + делает isdebuged = false если вдруг этот маршрут был debug у ped которому сделан assignedRoute = null
-                this.clearPedDependencies(routeID, ped.entity.id);
+                this.#clearPedDependencies(routeID, ped.entity.id);
             }
         });
     }
 
-    clearPedDependencies(routeID, pedId) {
+    #clearPedDependencies(routeID, pedId) {
         this.routeStorage.clearRouteAssignment(routeID, pedId);
         this.routeStorage.setRouteDebugStatus(routeID, false);
         this.pedStorage.unassignPedRoute(pedId);
