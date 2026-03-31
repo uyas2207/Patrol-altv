@@ -1,41 +1,30 @@
 import * as alt from 'alt-client';
 
 import { defaultClientConfig } from './config/clientConfig.js';
+import { NotificationManager } from './utilities/NotificationManager.js';
 
+import { DebugManager } from './classes/DebugManager.js';
+import { DebugVisuals } from './classes/DebugVisuals.js';
 
-import { DebugManager } from './classes/debugManager.js';
-import { DebugVisuals } from './classes/debugVisuals.js';
+import { PatrolExecutor } from './classes/PatrolExecutor.js';
 
-import { PatrolExecutor } from './classes/patrolExecutor.js';
+import { RouteManager } from './classes/Routes/RouteManager.js';
+import { RouteStorage } from './classes/Routes/RouteStorage.js';
 
-import { RouteManager } from './classes/Routes/routeManager.js';
-import { RouteStorage } from './classes/Routes/routeStorage.js';
-
-import { PedStorage } from './classes/Peds/pedStorage.js';
+import { PedStorage } from './classes/Peds/PedStorage.js';
 import { PedManager } from './classes/Peds/pedManager.js';
 
 class PatrolClient {
     constructor() {
-        this.routeStorage = new RouteStorage();
-        
+        this.notificationManager = new NotificationManager();
+        this.routeStorage = new RouteStorage(this.notificationManager);
         this.pedStorage = new PedStorage();
-
-        
-        this.patrolExecutor = new PatrolExecutor(defaultClientConfig);
-
+        this.patrolExecutor = new PatrolExecutor(defaultClientConfig, this.notificationManager);
         this.debugVisuals = new DebugVisuals(defaultClientConfig); //класс для визуального отображения debug
-
-        //this.routeManager = new RouteManager(defaultClientConfig);
+        this.pedManager = new PedManager(this.pedStorage, this.routeStorage, this.patrolExecutor, defaultClientConfig, this.notificationManager);
+        this.routeManager = new RouteManager(this.routeStorage, this.pedStorage, defaultClientConfig, this.notificationManager);
+        this.debugManager = new DebugManager(this.pedStorage, this.routeStorage, this.debugVisuals, this.notificationManager);
         
-        this.pedManager = new PedManager(this.pedStorage, this.routeStorage, this.patrolExecutor, defaultClientConfig);
-        
-
-        this.routeManager = new RouteManager(this.routeStorage, this.pedStorage, defaultClientConfig);
-        
-
-        this.debugManager = new DebugManager(this.pedStorage, this.routeStorage, this.debugVisuals);
-    
-        //this.routeManager.setPedManager(this.pedManager);
         this.#init();
     }
 

@@ -1,16 +1,16 @@
 import * as alt from 'alt-client';
 
-import {drawNotification} from '@utilities';
-
 export class RouteStorage {
-    constructor() {
+    constructor(notificationManager) {
         this.allRoutesMap = new Map();  // все маршруты на клиенте
+
+        this.notificationManager = notificationManager;
     }
     
     //получает route с сервера и добавляет его в allRoutesMap, если такой route еще не добавлен
     addRoute(route) {
         if (this.allRoutesMap.has(route.id)) {
-            drawNotification(`route ${route.name} уже существует`);
+            this.notificationManager.drawNotification(`route ${route.name} уже существует`);
             return;
         }
 

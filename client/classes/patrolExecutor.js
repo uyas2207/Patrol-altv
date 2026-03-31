@@ -1,16 +1,15 @@
 import * as native from 'natives';
 
-import {drawNotification} from '@utilities';
-
 export class PatrolExecutor {
-    constructor(defaultConfig){
+    constructor(defaultConfig, notificationManager){
         this.defaultConfig = defaultConfig;
+        this.notificationManager = notificationManager;
     }
 
     //назначение маршрута ped
     assignCurrentRouteToPed(ped, attributes, nodes) {
         if ( nodes.size === 0 ){
-            drawNotification(`Нельзя назначить пустой маршрут для патрулирования`);
+            this.notificationManager.drawNotification(`Нельзя назначить пустой маршрут для патрулирования`);
             return;
         }
         native.deletePatrolRoute(`miss_${attributes.name}`);

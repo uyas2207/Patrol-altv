@@ -2,22 +2,20 @@ import * as alt from 'alt-client';
 
 import * as native from 'natives';
 
-import {drawNotification} from '@utilities';
-
 export class PedManager {
-    constructor(pedStorage, routeStorage, patrolExecutor, defaultClientConfig) {
+    constructor(pedStorage, routeStorage, patrolExecutor, defaultClientConfig, notificationManager) {
         this.pedStorage = pedStorage;
-
         this.routeStorage = routeStorage;
         this.patrolExecutor = patrolExecutor;
         this.defaultConfig = defaultClientConfig;
+        this.notificationManager = notificationManager;
     }
 
     assignRoute(pedId, routeID) {
         // проверка существования маршрута
         if (this.routeStorage.hasRoute(routeID) === false) {
-            drawNotification(`Route не загружен на клиент`);
-            drawNotification(`Что бы загрузить Route используйте команду /path load`);
+            this.notificationManager.drawNotification(`Route не загружен на клиент`);
+            this.notificationManager.drawNotification(`Что бы загрузить Route используйте команду /path load`);
             return;
         }
 
@@ -25,7 +23,7 @@ export class PedManager {
         const ped = this.pedStorage.getPed(pedId);
 
         if (!ped) {
-            drawNotification(`Ped ${pedId} не найден`);
+            this.notificationManager.drawNotification(`Ped ${pedId} не найден`);
             return;
         }
         // назначение маршртуа ped
@@ -57,7 +55,7 @@ export class PedManager {
             this.#clearPedDependencies(ped.assignedRoute, pedID);
         }
         else{
-            drawNotification(`Ped ${pedID} не назначен никакой маршрут`);
+            this.notificationManager.drawNotification(`Ped ${pedID} не назначен никакой маршрут`);
         }
     }
 

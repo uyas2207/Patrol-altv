@@ -2,23 +2,22 @@ import * as alt from 'alt-client';
 
 import * as native from 'natives';
 
-import {drawNotification} from '@utilities';
-
 export class RouteManager {
-    constructor(routeStorage, pedStorage, defaultClientConfig) {
+    constructor(routeStorage, pedStorage, defaultClientConfig, notificationManager) {
         this.routeStorage = routeStorage;
         this.pedStorage = pedStorage;
         this.defaultConfig = defaultClientConfig;
 
         this.currentRouteMap = new Map();        // текущий маршрут
         this.currentRouteAttributes = null;      // в буддущем массив в котором будут доп знаечния для текщуего массива (looped, assigned, isdebuged)
+        this.notificationManager = notificationManager;
     }
 
     // сменить текущий route (route к которому добавляются и удаляются nodes)
     switchCurrentRoute(routeID) {
         if (!this.routeStorage.hasRoute(routeID)) {
-            drawNotification('Route не загружен на клиент');
-            drawNotification('Чтобы загрузить Route используйте команду /load');
+            this.notificationManager.drawNotification('Route не загружен на клиент');
+            this.notificationManager.drawNotification('Чтобы загрузить Route используйте команду /load');
             return;
         }
 
@@ -43,13 +42,13 @@ export class RouteManager {
     addNode(coords, lookingCoords, nodeId) {
         // если currentRouteAttributes === null значит route был очищенн (/clear), либо route еще не был передан на клиент
         if(!this.currentRouteAttributes) {
-            drawNotification(`Нельзя доавлять ноды в несущствующий route`);
+            this.notificationManager.drawNotification(`Нельзя доавлять ноды в несущствующий route`);
             return;
         }
 
         if ( this.currentRouteMap.has(nodeId) === true){
-            drawNotification(`Нода с номером ${nodeId} уже существует`);
-            drawNotification(`Удалите ноду с номером ${nodeId} или используйте другой номер`);
+            this.notificationManager.drawNotification(`Нода с номером ${nodeId} уже существует`);
+            this.notificationManager.drawNotification(`Удалите ноду с номером ${nodeId} или используйте другой номер`);
             return;
         }
 
@@ -77,8 +76,8 @@ export class RouteManager {
     // удаляет ноду из текущего маршрута
     deleteNode(nodeId) {
         if ( this.currentRouteMap.has(nodeId) === false){
-            drawNotification(`Нода с номером ${nodeId} не существует`);
-            drawNotification(`Нельзя удалить то чего нет`);
+            this.notificationManager.drawNotification(`Нода с номером ${nodeId} не существует`);
+            this.notificationManager.drawNotification(`Нельзя удалить то чего нет`);
             return;
         }
         this.currentRouteMap.delete(nodeId); // удалить из map все значения записанные под ключом nodeId
@@ -87,8 +86,8 @@ export class RouteManager {
     // очищает текущий маршрут и удаляет его из allRoutesMap + останавливает ped которому был назначен этот маршрут
     clearCurrentRoute(){
         if (!this.currentRouteAttributes){ // && this.currentRouteMap.size === 0
-            drawNotification(`Текщуий route пустой`);
-            drawNotification(`Нельзя очистить ПУСТОЙ route`);
+            this.notificationManager.drawNotification(`Текщуий route пустой`);
+            this.notificationManager.drawNotification(`Нельзя очистить ПУСТОЙ route`);
             return;
         }
         const tempID = this.currentRouteAttributes.id;
@@ -109,7 +108,7 @@ export class RouteManager {
     // отправляет на сервер текущий маршрут для сохранения его в общий список маршрутов в routePoints.json
     sendRouteMap(){           
         if ( this.currentRouteMap.size === 0 ) {
-            drawNotification(`Нельзя сохранять ПУСТОЙ route`);
+            this.notificationManager.drawNotification(`Нельзя сохранять ПУСТОЙ route`);
             return;
         }
 

@@ -1,21 +1,20 @@
 import * as alt from 'alt-client';
 
-import {drawNotification} from '@utilities';
-
 export class DebugManager {
-    constructor(pedStorage, routeStorage, debugVisuals) {
+    constructor(pedStorage, routeStorage, debugVisuals, notificationManager) {
         this.pedStorage = pedStorage;
         this.routeStorage = routeStorage;
         this.debugVisuals = debugVisuals;
         this.debug = null;  // хранит everytick для глобального debug
         this.singleDebug = new Map(); // хранит everytick для визуального отображения у конкретных ped
+        this.notificationManager = notificationManager;
     }
     
     pedDebug(PedID){
         const ped = this.pedStorage.getPed(PedID);
 
         if (!ped) {
-            drawNotification(`Ped=${PedID} не найден`);
+            this.notificationManager.drawNotification(`Ped=${PedID} не найден`);
             return;
         }
 

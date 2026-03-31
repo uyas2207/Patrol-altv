@@ -1,13 +1,16 @@
-// alt:V built-in module that provides server-side API.
 import * as alt from 'alt-server';
-
-import { RouteStorage } from './classes/routeStorage.js';
-import { PedManager } from './classes/pedManager.js';
-import { Debug } from './classes/debug.js';
-import { PatrolCommands } from './commands/patrolCommands.js';
 
 import { defaultParameters } from './config/serverconfig.js';
 import { npcs } from './config/serverconfig.js';
+
+import { RouteStorage } from './classes/RouteStorage.js';
+import { PedManager } from './classes/PedManager.js';
+import { Debug } from './classes/Debug.js';
+
+import { PathCommands } from './commands/PathCommands.js';
+import { PedCommands } from './commands/PedCommands.js';
+import { CommandRegistry } from './commands/CommandRegistry.js';
+import { CommandsUtilities } from './commands/CommandsUtilities.js'; 
 
 class PatrolServer {
     constructor() {
@@ -15,8 +18,12 @@ class PatrolServer {
         this.routeStorage = new RouteStorage('./resources/patrol/data/routePoints.json');
         this.pedManager = new PedManager(defaultParameters, npcs);
         this.debug = new Debug;
-        this.patrolCommands = new PatrolCommands(this.pedManager, this.routeStorage, this.debug);
 
+        this.commandRegistry = new CommandRegistry();
+        this.commandsUtilities = new CommandsUtilities();
+
+        this.pathCommands = new PathCommands(this.routeStorage, this.debug, this.commandsUtilities);
+        this.pedCommands = new PedCommands(this.pedManager, this.routeStorage, this.commandsUtilities);
         this.#init();
     }
 
@@ -31,6 +38,10 @@ class PatrolServer {
         });
 
         alt.on('resourceStart', () => {
+            this.commandRegistry.buildCommands(this.pathCommands);
+            this.commandRegistry.buildCommands(this.pedCommands);
+
+            this.commandRegistry.registerChatCommands();
             this.pedManager.spawnDefaultNpcs();
         });
 
