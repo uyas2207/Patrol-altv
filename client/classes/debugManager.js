@@ -1,12 +1,15 @@
 import * as alt from 'alt-client';
 
 export class DebugManager {
+    #debug;
+    #singleDebug;
+    
     constructor(pedStorage, routeStorage, debugVisuals, notificationManager) {
         this.pedStorage = pedStorage;
         this.routeStorage = routeStorage;
         this.debugVisuals = debugVisuals;
-        this.debug = null;  // хранит everytick для глобального debug
-        this.singleDebug = new Map(); // хранит everytick для визуального отображения у конкретных ped
+        this.#debug = null;  // хранит everytick для глобального debug
+        this.#singleDebug = new Map(); // хранит everytick для визуального отображения у конкретных ped
         this.notificationManager = notificationManager;
     }
     
@@ -44,15 +47,15 @@ export class DebugManager {
                 this.debugVisuals.drawRouteMarkers(data.nodes);
             }
         });
-        this.singleDebug.set(ped.entity.id, timerID);
+        this.#singleDebug.set(ped.entity.id, timerID);
     }
 
     #pedDebugTurnOff(PedID){
         const ped = this.pedStorage.getPed(PedID);
 
-        const timerId = this.singleDebug.get(ped.entity.id);
+        const timerId = this.#singleDebug.get(ped.entity.id);
         alt.clearEveryTick(timerId);
-        this.singleDebug.delete(ped.entity.id);
+        this.#singleDebug.delete(ped.entity.id);
 
         this.pedStorage.setPedIsdebugedStatus(ped.entity.id, false);
 
@@ -62,7 +65,7 @@ export class DebugManager {
     }
     
     turnOnGlobalDebug() {
-        this.debug = alt.everyTick(() => {
+        this.#debug = alt.everyTick(() => {
             this.#drawAllPedVisionCones();
             this.#drawAllMarkers();
             this.#connectAllRoutesLine();
@@ -71,7 +74,7 @@ export class DebugManager {
 
     turnOffGlobalDebug() {
         alt.clearEveryTick(this.debug);
-        this.debug = null;
+        this.#debug = null;
     }
 
     #drawAllMarkers() {

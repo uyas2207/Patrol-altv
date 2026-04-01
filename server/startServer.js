@@ -14,7 +14,6 @@ import { CommandsUtilities } from './commands/CommandsUtilities.js';
 
 class PatrolServer {
     constructor() {
-
         this.routeStorage = new RouteStorage('./resources/patrol/data/routePoints.json');
         this.pedManager = new PedManager(defaultParameters, npcs);
         this.debug = new Debug;

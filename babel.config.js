@@ -6,15 +6,16 @@ export default {
       { //настройки для @babel/preset-env
         //targets определяет целевые среды выполнения кода (будет преобразовывать только тот синтаксис, который не поддерживается в указанных версиях)
         "targets": {
-          "chrome": "80", //нужен для es2020 ( и JavaScript ?)
+          "chrome": "90", //нужен для es2020 ( и JavaScript ?)
           "node": "16"  // так как 'node16' target в webpack.config.js
         },
+        "shippedProposals": true,
         // "modules" - определяет как преобразовывать модули (import/export)
         "modules": "auto",  // Webpack настроен на ES модули, поэтому import/export сохранятся
         // "useBuiltIns" - настройка полифиллов для встроенных объектов JavaScript
         //false что бы не было конфликов с нативками altv
-        "useBuiltIns": false  // нужен для того что бы babel не добавлял полифиллы для Promise, Map, Set и т.д
+        "useBuiltIns": false,  // нужен для того что бы babel не добавлял полифиллы для Promise, Map, Set и т.д
       }
     ]
-  ]
+ ]
 }

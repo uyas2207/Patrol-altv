@@ -4,12 +4,14 @@ import * as alt from 'alt-server';
 import * as chat from 'alt:chat';
 
 export class Debug {
+    #debug;
+    
     constructor() {
-        this.debug = false; //изначальное состояния debug при включении сервера
+        this.#debug = false; //изначальное состояния debug при включении сервера
     }
 
     toggle(player) {
-        if (!this.debug) {
+        if (!this.#debug) {
             this.#turnOn(player);
         } else {
             this.#turnOff(player);
@@ -18,17 +20,17 @@ export class Debug {
 
     #turnOn(player) {
         alt.emitClient(player, 'patrol:debugTurnOn');
-        this.debug = true;
+        this.#debug = true;
         chat.send(player, `Debug on`);
     }
 
     #turnOff(player) {
         alt.emitClient(player, 'patrol:debugTurnOff');
-        this.debug = false;
+        this.#debug = false;
         chat.send(player, `Debug off`);
     }
     
     isEnabled() {
-        return this.debug;
+        return this.#debug;
     }
 }
