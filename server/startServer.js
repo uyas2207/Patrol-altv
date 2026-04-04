@@ -9,7 +9,7 @@ import { Debug } from './classes/Debug.js';
 
 import { PathCommands } from './commands/PathCommands.js';
 import { PedCommands } from './commands/PedCommands.js';
-import { CommandRegistry } from './commands/CommandRegistry.js';
+import { CommandManager  } from './commands/CommandManager .js';
 import { CommandsUtilities } from './commands/CommandsUtilities.js'; 
 
 class PatrolServer {
@@ -18,7 +18,7 @@ class PatrolServer {
         this.pedManager = new PedManager(defaultParameters, npcs);
         this.debug = new Debug;
 
-        this.commandRegistry = new CommandRegistry();
+        this.CommandManager  = new CommandManager ();
         this.commandsUtilities = new CommandsUtilities();
 
         this.pathCommands = new PathCommands(this.routeStorage, this.debug, this.commandsUtilities);
@@ -37,10 +37,10 @@ class PatrolServer {
         });
 
         alt.on('resourceStart', () => {
-            this.commandRegistry.buildCommands(this.pathCommands);
-            this.commandRegistry.buildCommands(this.pedCommands);
+            this.CommandManager .buildCommands(this.pathCommands);
+            this.CommandManager .buildCommands(this.pedCommands);
 
-            this.commandRegistry.registerChatCommands();
+            this.CommandManager .registerChatCommands();
             this.pedManager.spawnDefaultNpcs();
         });
 

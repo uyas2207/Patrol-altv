@@ -1,7 +1,6 @@
-import * as alt from 'alt-server';
 import * as chat from 'alt:chat';
 
-export class CommandRegistry {
+export class CommandManager  {
     constructor() {
         this.commands = {};
     }
